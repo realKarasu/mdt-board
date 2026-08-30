@@ -25,7 +25,7 @@ function unescapeString(value: string): string {
     if (escape === "~\x7b") return "\x7f";
     if (escape === "~\x7c") return "~";
     if (escape === "~\x7d") return "^";
-    throw new Error(`Échappement Ace invalide: ${escape}`);
+    throw new Error(`Invalid Ace escape: ${escape}`);
   });
 }
 
@@ -69,7 +69,7 @@ function serializeValue(v: AceValue, out: string[]): void {
     out.push("^t");
     return;
   }
-  throw new Error(`Type Ace non sérialisable: ${t}`);
+  throw new Error(`Ace type is not serializable: ${t}`);
 }
 
 export function aceSerialize(value: AceValue): string {
@@ -83,7 +83,7 @@ function parseNumber(raw: string): number {
   if (raw === NEG_INF || raw === "-inf") return Number.NEGATIVE_INFINITY;
   if (raw === INF || raw === "inf") return Number.POSITIVE_INFINITY;
   const n = Number(raw);
-  if (Number.isNaN(n)) throw new Error(`Nombre Ace invalide: ${raw}`);
+  if (Number.isNaN(n)) throw new Error(`Invalid Ace number: ${raw}`);
   return n;
 }
 
@@ -96,12 +96,12 @@ export function aceDeserialize(input: string): AceValue {
     tokens.push({ ctl: m[1], data: m[2] });
   }
   if (!tokens.length || tokens[0].ctl !== "^1") {
-    throw new Error("Ce n'est pas une chaîne AceSerializer (rév. 1)");
+    throw new Error("Not an AceSerializer string (rev. 1)");
   }
   let i = 1;
 
   function readOne(): AceValue {
-    if (i >= tokens.length) throw new Error("Données Ace tronquées");
+    if (i >= tokens.length) throw new Error("Truncated Ace data");
     const { ctl, data } = tokens[i];
     i += 1;
     if (ctl === "^^") return null;
@@ -109,7 +109,7 @@ export function aceDeserialize(input: string): AceValue {
     if (ctl === "^N") return parseNumber(data);
     if (ctl === "^F") {
       const next = tokens[i];
-      if (!next || next.ctl !== "^f") throw new Error("Flottant Ace incomplet");
+      if (!next || next.ctl !== "^f") throw new Error("Incomplete Ace float");
       i += 1;
       return Number(data) * 2 ** Number(next.data);
     }
@@ -119,19 +119,19 @@ export function aceDeserialize(input: string): AceValue {
     if (ctl === "^T") {
       const table: AceTable = {};
       while (true) {
-        if (i >= tokens.length) throw new Error("Table Ace sans fin");
+        if (i >= tokens.length) throw new Error("Unterminated Ace table");
         if (tokens[i].ctl === "^t") {
           i += 1;
           break;
         }
         const key = readOne();
         const value = readOne();
-        if (key === null) throw new Error("Clé de table Ace invalide");
+        if (key === null) throw new Error("Invalid Ace table key");
         table[key as string | number] = value;
       }
       return table;
     }
-    throw new Error(`Code Ace inconnu: ${ctl}`);
+    throw new Error(`Unknown Ace code: ${ctl}`);
   }
 
   return readOne();
@@ -139,7 +139,7 @@ export function aceDeserialize(input: string): AceValue {
 
 export function asTable(value: AceValue): AceTable {
   if (!value || typeof value !== "object") {
-    throw new Error("Objet MDT attendu");
+    throw new Error("Expected an MDT object");
   }
   return value as AceTable;
 }

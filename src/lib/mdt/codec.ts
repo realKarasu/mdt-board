@@ -33,7 +33,7 @@ function tryInflate(bytes: Uint8Array): Uint8Array {
     try {
       return inflate(bytes);
     } catch {
-      throw new MdtDecodeError("Décompression Deflate impossible");
+      throw new MdtDecodeError("Deflate decompression failed");
     }
   }
 }
@@ -48,7 +48,7 @@ function decodeLegacy(raw: string): AceValue {
     binary = decodeForPrint(encoded);
   } catch (err) {
     throw new MdtDecodeError(
-      err instanceof Error ? err.message : "Décodage LibDeflate impossible",
+      err instanceof Error ? err.message : "LibDeflate decode failed",
     );
   }
   const decompressed = tryInflate(binary);
@@ -56,7 +56,7 @@ function decodeLegacy(raw: string): AceValue {
   try {
     return aceDeserialize(aceText);
   } catch (err) {
-    throw new MdtDecodeError(err instanceof Error ? err.message : "Désérialisation Ace impossible");
+    throw new MdtDecodeError(err instanceof Error ? err.message : "Ace deserialize failed");
   }
 }
 
@@ -67,19 +67,19 @@ function decodeMdt2(raw: string): AceValue {
     const bin = atob(b64);
     binary = latin1Bytes(bin);
   } catch {
-    throw new MdtDecodeError("Base64 MDT2 invalide");
+    throw new MdtDecodeError("Invalid MDT2 base64");
   }
   const decompressed = tryInflate(binary);
   try {
     return cborDecode(decompressed) as AceValue;
   } catch {
-    throw new MdtDecodeError("CBOR MDT2 invalide");
+    throw new MdtDecodeError("Invalid MDT2 CBOR");
   }
 }
 
 export function decodeMdtString(raw: string): AceValue {
   const trimmed = raw.trim().replace(/\s+/g, "");
-  if (!trimmed) throw new MdtDecodeError("Colle une chaîne MDT non vide");
+  if (!trimmed) throw new MdtDecodeError("Paste a non-empty MDT string");
   if (trimmed.startsWith(MDT2)) return decodeMdt2(trimmed);
   return decodeLegacy(trimmed);
 }

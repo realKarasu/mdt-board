@@ -47,7 +47,7 @@ export function PullSidebar({
                 <span className="meta">
                   <strong>{packSummary(dungeon, pull)}</strong>
                   <em>
-                    {formatPct(pct(forces, dungeon.totalCount))} · cumul {formatPct(pct(cum, dungeon.totalCount))}
+                    {formatPct(pct(forces, dungeon.totalCount))} · total {formatPct(pct(cum, dungeon.totalCount))}
                   </em>
                   {pull.note && <small>{pull.note}</small>}
                 </span>
@@ -78,7 +78,7 @@ export function PullSidebar({
               {!compact && onNote && active && (
                 <textarea
                   value={pull.note}
-                  placeholder="Note de pull (CC, lust, skip…)"
+                  placeholder="Pull note (CC, lust, skip…)"
                   onChange={(e) => onNote(i, e.target.value)}
                   rows={2}
                 />

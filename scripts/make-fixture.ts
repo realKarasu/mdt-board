@@ -3,7 +3,7 @@ import path from "node:path";
 import { encodeRoute, decodeRoute } from "../src/lib/mdt/preset";
 import { createRoute, emptyPull } from "../src/lib/route";
 
-const route = createRoute(164, "Autel · Blood DK sample");
+const route = createRoute(164, "Altar · Blood DK sample");
 route.pulls = [
   {
     ...emptyPull(0),
@@ -11,12 +11,12 @@ route.pulls = [
       { enemyId: 1, cloneIdx: 1 },
       { enemyId: 1, cloneIdx: 2 },
     ],
-    note: "Lust sur le premier gros pack",
+    note: "Lust on the first big pack",
   },
   {
     ...emptyPull(1),
     clones: [{ enemyId: 2, cloneIdx: 1 }],
-    note: "Skip si late",
+    note: "Skip if late",
   },
   {
     ...emptyPull(2),

@@ -15,32 +15,32 @@ export function Picker({ dungeons, saved, onNew, onOpen, onDelete, onImport, onS
   return (
     <div className="picker">
       <header>
-        <p className="kicker">Midnight Saison 2 · 12.1</p>
+        <p className="kicker">Midnight Season 2 · 12.1</p>
         <h1>MDT Board</h1>
         <p className="lede">
-          Viewer / éditeur de routes Mythic+ pour second écran. Importe une chaîne MDT ou construis tes pulls, puis
-          passe en board plein écran pendant la key.
+          Local-first Mythic+ route viewer and editor for a second monitor. Paste an MDT string or
+          build pulls on the map, then switch to fullscreen board during the key.
         </p>
         <div className="actions" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <button type="button" className="btn primary" onClick={onImport}>
-            Coller une chaîne MDT
+            Paste MDT string
           </button>
           <button type="button" className="btn" onClick={onSample}>
-            Exemple Autel des Crocs
+            Altar of Fangs example
           </button>
         </div>
       </header>
 
       <section>
-        <h2>Pool live</h2>
+        <h2>Live pool</h2>
         <div className="dungeon-grid">
           {dungeons.map((d) => (
             <button key={d.dungeonIndex} type="button" className="dungeon-card" onClick={() => onNew(d.dungeonIndex)}>
               <img src={d.maps[d.floors[0]]} alt="" />
               <div>
-                <strong>{d.nameFr}</strong>
+                <strong>{d.englishName}</strong>
                 <span>
-                  {d.totalCount} forces · {d.cloneCount} PNJ · idx {d.dungeonIndex}
+                  {d.totalCount} count · {d.cloneCount} NPCs · idx {d.dungeonIndex}
                 </span>
               </div>
             </button>
@@ -49,9 +49,9 @@ export function Picker({ dungeons, saved, onNew, onOpen, onDelete, onImport, onS
       </section>
 
       <section>
-        <h2>Routes sauvées</h2>
+        <h2>Saved routes</h2>
         {saved.length === 0 ? (
-          <p className="mute">Aucune route en local pour l'instant.</p>
+          <p className="mute">No local routes yet.</p>
         ) : (
           <ul className="saved">
             {saved.map((r) => {
@@ -61,11 +61,11 @@ export function Picker({ dungeons, saved, onNew, onOpen, onDelete, onImport, onS
                   <button type="button" onClick={() => onOpen(r)}>
                     <strong>{r.name}</strong>
                     <span>
-                      {dungeon?.nameFr ?? `Donjon ${r.dungeonIdx}`} · {r.pulls.length} pulls
+                      {dungeon?.englishName ?? `Dungeon ${r.dungeonIdx}`} · {r.pulls.length} pulls
                     </span>
                   </button>
                   <button type="button" className="danger" onClick={() => onDelete(r.id)}>
-                    Supprimer
+                    Delete
                   </button>
                 </li>
               );

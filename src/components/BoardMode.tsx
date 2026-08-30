@@ -23,7 +23,7 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
     <div className="board">
       <header className="board-top">
         <div>
-          <p className="kicker">{dungeon.nameFr}</p>
+          <p className="kicker">{dungeon.englishName}</p>
           <h1>{route.name}</h1>
         </div>
         <div className={`forces ${over ? "over" : totalPct >= 100 ? "ok" : ""}`}>
@@ -33,7 +33,7 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
           </span>
         </div>
         <button type="button" className="btn ghost" onClick={onEditor}>
-          Éditeur · Échap
+          Editor · Esc
         </button>
       </header>
 
@@ -46,7 +46,7 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
           onSelectPull={onSelectPull}
         />
         <section className="board-pull">
-          <p className="kicker">Pull actuel</p>
+          <p className="kicker">Current pull</p>
           <h2>
             PULL <span style={{ color: pull?.color }}>{route.currentPull}</span>
             <small>
@@ -54,19 +54,19 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
             </small>
           </h2>
           <p className="packs">{pull ? packSummary(dungeon, pull) : "—"}</p>
-          {pull?.note ? <p className="note">{pull.note}</p> : <p className="note mute">Pas de note</p>}
+          {pull?.note ? <p className="note">{pull.note}</p> : <p className="note mute">No note</p>}
           <dl>
             <div>
-              <dt>Ce pull</dt>
+              <dt>This pull</dt>
               <dd>{formatPct(pct(pull ? pullForces(dungeon, pull) : 0, dungeon.totalCount))}</dd>
             </div>
             <div>
-              <dt>Restant après</dt>
+              <dt>Remaining after</dt>
               <dd>{formatPct(pct(remaining, dungeon.totalCount))}</dd>
             </div>
           </dl>
           <div className="next">
-            <p className="kicker">Prochain</p>
+            <p className="kicker">Next</p>
             {next ? (
               <>
                 <strong>Pull {route.currentPull + 1}</strong>
@@ -74,10 +74,10 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
                 {next.note && <em>{next.note}</em>}
               </>
             ) : (
-              <span className="mute">Dernier pull</span>
+              <span className="mute">Last pull</span>
             )}
           </div>
-          <p className="keys">← → ou J K pour avancer · F plein écran · 1-9 saut</p>
+          <p className="keys">← → or J K to step · F fullscreen · 1-9 jump</p>
         </section>
       </div>
     </div>

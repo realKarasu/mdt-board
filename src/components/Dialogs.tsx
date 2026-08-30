@@ -11,8 +11,8 @@ export function ImportDialog({ error, onClose, onImport }: ImportProps) {
   return (
     <div className="modal" role="dialog" aria-labelledby="import-title">
       <div className="sheet">
-        <h2 id="import-title">Importer MDT</h2>
-        <p>Colle une chaîne exportée par Mythic Dungeon Tools (`!…` ou `!~MDT2~…`).</p>
+        <h2 id="import-title">Import MDT</h2>
+        <p>Paste a string exported by Mythic Dungeon Tools (`!…` or `!~MDT2~…`).</p>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -23,10 +23,10 @@ export function ImportDialog({ error, onClose, onImport }: ImportProps) {
         {error && <p className="error">{error}</p>}
         <div className="actions">
           <button type="button" className="btn ghost" onClick={onClose}>
-            Annuler
+            Cancel
           </button>
           <button type="button" className="btn primary" onClick={() => onImport(text)}>
-            Importer
+            Import
           </button>
         </div>
       </div>
@@ -52,21 +52,21 @@ export function ExportDialog({ mdt, json, warning, onClose }: ExportProps) {
   return (
     <div className="modal" role="dialog" aria-labelledby="export-title">
       <div className="sheet">
-        <h2 id="export-title">Exporter</h2>
+        <h2 id="export-title">Export</h2>
         <p>{warning}</p>
-        <label>Chaîne MDT (meilleur effort)</label>
+        <label>MDT string (best effort)</label>
         <textarea readOnly value={mdt} rows={4} />
-        <label>Sauvegarde JSON</label>
+        <label>JSON backup</label>
         <textarea readOnly value={json} rows={6} />
         <div className="actions">
           <button type="button" className="btn" onClick={() => void copy("mdt", mdt)}>
-            {copied === "mdt" ? "MDT copiée" : "Copier MDT"}
+            {copied === "mdt" ? "MDT copied" : "Copy MDT"}
           </button>
           <button type="button" className="btn" onClick={() => void copy("json", json)}>
-            {copied === "json" ? "JSON copié" : "Copier JSON"}
+            {copied === "json" ? "JSON copied" : "Copy JSON"}
           </button>
           <button type="button" className="btn ghost" onClick={onClose}>
-            Fermer
+            Close
           </button>
         </div>
       </div>

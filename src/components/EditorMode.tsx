@@ -50,13 +50,13 @@ export function EditorMode({
     <div className="editor">
       <header className="editor-top">
         <button type="button" className="btn ghost" onClick={onHome}>
-          Donjons
+          Dungeons
         </button>
         <input
           className="route-name"
           value={route.name}
           onChange={(e) => onName(e.target.value)}
-          aria-label="Nom de la route"
+          aria-label="Route name"
         />
         <div className={`forces ${over ? "over" : totalPct >= 100 ? "ok" : ""}`}>
           <strong>{formatPct(totalPct)}</strong>
@@ -72,22 +72,22 @@ export function EditorMode({
               className={f === route.currentSublevel ? "on" : ""}
               onClick={() => onFloor(f)}
             >
-              Étage {f}
+              Floor {f}
             </button>
           ))}
         </div>
         <label className="chk">
           <input type="checkbox" checked={showPath} onChange={onTogglePath} />
-          Chemin
+          Path
         </label>
         <button type="button" className="btn" onClick={onImport}>
-          Importer
+          Import
         </button>
         <button type="button" className="btn" onClick={onExport}>
-          Exporter
+          Export
         </button>
         <button type="button" className="btn" onClick={onSave}>
-          Sauver
+          Save
         </button>
         <button type="button" className="btn primary" onClick={onBoard}>
           Board
@@ -113,8 +113,7 @@ export function EditorMode({
         />
       </div>
       <p className="hint">
-        Clic sur un PNJ pour l'ajouter ou le retirer du pull {route.currentPull}. Molette pour zoomer, glisser pour
-        déplacer.
+        Click an NPC to add or remove it from pull {route.currentPull}. Scroll to zoom, drag to pan.
       </p>
     </div>
   );

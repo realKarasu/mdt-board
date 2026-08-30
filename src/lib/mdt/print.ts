@@ -40,7 +40,7 @@ export function encodeForPrint(bytes: Uint8Array): string {
 export function decodeForPrint(input: string): Uint8Array {
   const str = input.replace(/^[\x00-\x1f ]+/, "").replace(/[\x00-\x1f ]+$/, "");
   if (str.length === 1) {
-    throw new Error("Chaîne LibDeflate trop courte");
+    throw new Error("LibDeflate string is too short");
   }
   const out: number[] = [];
   let i = 0;
@@ -51,7 +51,7 @@ export function decodeForPrint(input: string): Uint8Array {
     const x3 = FROM_CHAR[str.charCodeAt(i + 2)];
     const x4 = FROM_CHAR[str.charCodeAt(i + 3)];
     if (x1 == null || x2 == null || x3 == null || x4 == null) {
-      throw new Error("Caractère invalide dans l'encodage LibDeflate");
+      throw new Error("Invalid character in LibDeflate encoding");
     }
     i += 4;
     const cache = x1 + x2 * 64 + x3 * 4096 + x4 * 262144;
@@ -65,7 +65,7 @@ export function decodeForPrint(input: string): Uint8Array {
   let bitlen = 0;
   while (i < str.length) {
     const x = FROM_CHAR[str.charCodeAt(i)];
-    if (x == null) throw new Error("Caractère invalide dans l'encodage LibDeflate");
+    if (x == null) throw new Error("Invalid character in LibDeflate encoding");
     cache += x * 2 ** bitlen;
     bitlen += 6;
     i += 1;

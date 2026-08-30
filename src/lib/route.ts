@@ -23,7 +23,7 @@ export function emptyPull(index: number): Pull {
   return { clones: [], note: "", color: PULL_COLORS[index % PULL_COLORS.length] };
 }
 
-export function createRoute(dungeonIdx: number, name = "Nouvelle route"): Route {
+export function createRoute(dungeonIdx: number, name = "New route"): Route {
   return {
     id: newRouteId(),
     name,
@@ -141,7 +141,7 @@ export function packSummary(dungeon: Dungeon, pull: Pull): string {
     counts.set(enemy.name, cur);
   }
   const parts = [...counts.values()].map((c) => (c.n > 1 ? `${c.name} ×${c.n}` : c.name));
-  return parts.join(" · ") || "Pull vide";
+  return parts.join(" · ") || "Empty pull";
 }
 
 export function exportFileName(route: Route, ext: string): string {

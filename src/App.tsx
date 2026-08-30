@@ -63,16 +63,16 @@ export default function App() {
       const imported = parseIncomingRoute(raw);
       if (!getDungeon(imported.dungeonIdx)) {
         throw new MdtDecodeError(
-          `Donjon MDT ${imported.dungeonIdx} hors pool S2. Vérifie que la chaîne vient d'un donjon Midnight S2.`,
+          `MDT dungeon ${imported.dungeonIdx} is not in the Season 2 pool. Use a Midnight Season 2 dungeon string.`,
         );
       }
       persist(imported);
       setImportOpen(false);
       setImportError(null);
       setMode("board");
-      flash("Route importée");
+      flash("Route imported");
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : "Import impossible");
+      setImportError(err instanceof Error ? err.message : "Import failed");
     }
   }
 
@@ -129,7 +129,7 @@ export default function App() {
           saved={saved}
           onNew={(idx) => {
             const d = getDungeon(idx);
-            openRoute(createRoute(idx, d ? `${d.shortFr} · Blood DK` : "Nouvelle route"), "editor");
+            openRoute(createRoute(idx, d ? `${d.shortName} / Blood DK` : "New route"), "editor");
           }}
           onOpen={(r) => openRoute(r, "board")}
           onDelete={(id) => {
@@ -169,7 +169,7 @@ export default function App() {
           onExport={() => setExportOpen(true)}
           onSave={() => {
             persist(route);
-            flash("Route sauvée en local");
+            flash("Route saved locally");
           }}
           onHome={() => setMode("picker")}
         />
@@ -197,7 +197,7 @@ export default function App() {
         <ExportDialog
           mdt={exportPayload.mdt}
           json={exportPayload.json}
-          warning="JSON = sauvegarde complète. La chaîne MDT reprend donjon, pulls et notes. Dessins / objets MDT non réexportés."
+          warning="JSON is a full backup. The MDT string includes dungeon, pulls, and notes. MDT drawings and objects are not re-exported."
           onClose={() => setExportOpen(false)}
         />
       )}

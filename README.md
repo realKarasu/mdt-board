@@ -1,27 +1,27 @@
 # MDT Board
 
-Outil personnel, local-first, pour lire et éditer une route Mythic+ sur un second écran. Inspiré de Mythic Dungeon Tools et de l'usage Keystone.guru, sans compte et sans combat log.
+Personal local-first Mythic+ route viewer and editor for a second monitor. Inspired by Mythic Dungeon Tools and Keystone.guru usage, with no account and no combat log.
 
-Fait pour Fabien (Blood DK) : carte énorme, pulls numérotés, % de forces, notes, clavier d'abord.
+Built for a Blood DK: large parchment map, numbered pulls, count %, notes, keyboard-first board.
 
-Pool **Midnight Saison 2 / patch 12.1** :
+Pool is **Midnight Season 2 / patch 12.1**:
 
-| Donjon | Index MDT | Forces |
+| Dungeon | MDT index | Count |
 | --- | ---: | ---: |
-| Autel des Crocs | 164 | 817 |
-| Allée du Meurtre | 160 | 655 |
-| Tanière de Nalorakk | 161 | 729 |
-| Le Val aveuglant | 162 | 686 |
-| Arène de Voidscar | 163 | 738 |
-| Repos des rois | 17 | 608 |
-| Temple de Sethraliss | 20 | 687 |
-| Bassins de l'Essence rubis | 42 | 551 |
+| Altar of Fangs | 164 | 817 |
+| Murder Row | 160 | 655 |
+| Den of Nalorakk | 161 | 729 |
+| The Blinding Vale | 162 | 686 |
+| Voidscar Arena | 163 | 738 |
+| Kings' Rest | 17 | 608 |
+| Temple of Sethraliss | 20 | 687 |
+| Ruby Life Pools | 42 | 551 |
 
-Les index, positions de PNJ, `count` et textures viennent de [MythicDungeonTools](https://github.com/Nnoggie/MythicDungeonTools) (fichiers `Midnight/*.lua` + tuiles `Midnight/Textures`). Extraire à nouveau : `npm run extract` (clone sparse de l'addon).
+Indexes, NPC positions, `count`, `displayId`, and map tiles come from [MythicDungeonTools](https://github.com/Nnoggie/MythicDungeonTools) (`Midnight/*.lua` plus `Midnight/Textures`). Re-extract with `npm run extract` (sparse clone of the addon). Portraits resolve from Wowhead `zamimg` NPC model thumbs (`displayId % 256`) and are cached in `public/portraits`.
 
-## Lancer en local
+## Run locally
 
-Dépôt public : **https://github.com/realKarasu/mdt-board**
+Public repo: **https://github.com/realKarasu/mdt-board**
 
 ```bash
 git clone https://github.com/realKarasu/mdt-board.git
@@ -30,50 +30,52 @@ npm install
 npm run dev
 ```
 
-Ouvre **http://127.0.0.1:43173** (pas de Vercel, pas de deploy : tout tourne en localhost).
+Open **http://127.0.0.1:43173**. No deploy: everything stays on localhost.
 
-Tests : `npm test`.
+Tests: `npm test`.
 
-## Importer une chaîne MDT
+## Import an MDT string
 
-1. Dans le jeu, ouvre MDT → Export / Share, copie la chaîne (`!…` legacy Ace+LibDeflate, ou `!~MDT2~…` CBOR).
-2. Dans l'app : **Coller une chaîne MDT**, colle, importe.
-3. Si le décodage échoue, l'erreur s'affiche (rien n'est avalé en silence).
-4. Bouton **Exemple Autel des Crocs** : charge `fixtures/altar-of-fangs.mdt`.
+1. In game, open MDT → Export / Share and copy the string (`!…` legacy Ace + LibDeflate, or `!~MDT2~…` CBOR).
+2. In the app: **Paste MDT string**, paste, import.
+3. If decode fails, the error is shown (nothing is swallowed).
+4. **Altar of Fangs example** loads `fixtures/altar-of-fangs.mdt`.
 
-JSON local : tu peux aussi coller une sauvegarde `mdt-board-route` exportée par l'app (via le JSON, pas via le champ MDT).
+You can also paste a `mdt-board-route` JSON backup exported by the app.
 
-## Second écran (board)
+## Second-screen board
 
-1. Charge une route (import ou construction).
-2. Clique **Board** (l'import ouvre déjà le board).
-3. Glisse la fenêtre du navigateur sur le moniteur 2.
-4. `F` ou le plein écran du navigateur (`F11`) pour cacher le chrome.
-5. **Sans souris** : `←` `→` ou `J` `K` pour changer de pull, `1`–`9` pour sauter, `Échap` pour l'éditeur.
+1. Load a route (import or build).
+2. Click **Board** (import already opens the board).
+3. Drag the browser window onto monitor 2.
+4. `F` or browser fullscreen (`F11`) to hide chrome.
+5. **No mouse needed**: `←` `→` or `J` `K` to change pull, `1`–`9` to jump, `Esc` for the editor.
 
-Le board affiche le nom du donjon / de la route, le % total, **PULL N**, les packs, la note, le % restant, et le pull suivant.
+The board shows dungeon and route name, total %, **PULL N**, packs, note, remaining %, and the next pull.
 
-## Éditeur
+## Editor
 
-- Choisis un donjon du pool live.
-- Clique les points PNJ pour les ajouter / retirer du pull actif (un clone déjà dans un autre pull est déplacé).
-- Crée, réordonne, supprime des pulls. Note courte par pull.
-- Molette : zoom. Glisser : pan. Onglets d'étage si plusieurs sublevels MDT.
-- **Sauver** : `localStorage` uniquement.
-- **Exporter** : JSON complet + chaîne MDT meilleur effort.
+- Pick a dungeon from the live pool.
+- Click NPC portraits to add or remove them from the active pull (a clone already in another pull is moved).
+- Create, reorder, or delete pulls. Short note per pull.
+- Scroll to zoom. Drag to pan. Floor tabs if MDT has several sublevels.
+- **Save**: `localStorage` only.
+- **Export**: full JSON plus a best-effort MDT string.
 
-## Limites d'export MDT
+The map uses the classic MDT look: parchment top-down, circular NPC portraits, colored convex hulls around each pull, a numbered path with direction arrows, yellow `!` notes, and a blue diamond at the entrance.
 
-L'import lit les vrais presets (donjon, pulls `enemyId → clones`, notes, `uid`).
+## MDT export limits
 
-L'export MDT réécrit donjon + pulls + notes + nom. **Pas** les dessins / objets, assignations de POI, semaine d'affixes, ni le format `!~MDT2~` (on réémet le format legacy `!` AceSerializer + LibDeflate, largement accepté). Pour une copie fidèle, garde le JSON.
+Import reads real presets (dungeon, pulls `enemyId → clones`, notes, `uid`).
+
+MDT export rewrites dungeon + pulls + notes + name. It does **not** include drawings / objects, POI assignments, affix week, or `!~MDT2~` (it emits legacy `!` AceSerializer + LibDeflate, which most clients accept). Keep the JSON for a faithful copy.
 
 ## Architecture
 
-- `scripts/extract-mdt.mjs` : parse les tables Lua MDT, assemble les 150 tuiles 128px (grille officielle 10×15, `sizex=840` / `sizey=555`).
-- `src/lib/mdt/` : AceSerializer-3.0, LibDeflate `EncodeForPrint`, inflate raw, MDT2 base64+deflate+CBOR.
-- `src/data/*.json` + `public/maps/*.jpg` : données saison, pas l'addon entier.
+- `scripts/extract-mdt.mjs`: parse MDT Lua tables, stitch the official 10×15 grid of 128px tiles (`sizex=840` / `sizey=555`), download NPC portraits.
+- `src/lib/mdt/`: AceSerializer-3.0, LibDeflate `EncodeForPrint`, inflate raw, MDT2 base64 + deflate + CBOR.
+- `src/data/*.json` + `public/maps/*.jpg` + `public/portraits/*.webp`: season data, not the whole addon.
 
-## Licence
+## License
 
-Code de l'app : usage personnel. Données et cartes dérivées de Mythic Dungeon Tools (Nnoggie). Respecte la licence de l'addon si tu redistribues les extraits.
+App code: personal use. Data and maps are derived from Mythic Dungeon Tools (Nnoggie). Follow the addon license if you redistribute extracts.

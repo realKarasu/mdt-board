@@ -62,10 +62,10 @@ export function presetToRoute(preset: AceTable): Route {
   const value = asRecord(preset.value);
   const dungeonIdx = num(value.currentDungeonIdx);
   if (!dungeonIdx) {
-    throw new MdtDecodeError("La chaîne MDT n'indique pas de donjon (currentDungeonIdx)");
+    throw new MdtDecodeError("MDT string has no dungeon (currentDungeonIdx)");
   }
   const pulls = pullsFromValue(value);
-  const name = typeof preset.text === "string" && preset.text.trim() ? preset.text : "Route importée";
+  const name = typeof preset.text === "string" && preset.text.trim() ? preset.text : "Imported route";
   return {
     id: newRouteId(),
     name,
@@ -93,9 +93,9 @@ export function parseIncomingRoute(raw: string): Route {
         return { ...route, id: route.id || newRouteId(), updatedAt: Date.now() };
       }
     } catch {
-      throw new MdtDecodeError("JSON invalide");
+      throw new MdtDecodeError("Invalid JSON");
     }
-    throw new MdtDecodeError("JSON reconnu mais ce n'est pas une route mdt-board");
+    throw new MdtDecodeError("JSON parsed but it is not an mdt-board route");
   }
   return decodeRoute(trimmed);
 }
@@ -143,6 +143,6 @@ export function routeToJsonBackup(route: Route) {
     version: 1,
     exportedAt: new Date().toISOString(),
     route,
-    note: "Sauvegarde JSON complète. La chaîne MDT exportée est un meilleur effort (pulls, notes, donjon). Les dessins / objets MDT ne sont pas réexportés.",
+    note: "Full JSON backup. The exported MDT string is best-effort (pulls, notes, dungeon). MDT drawings and objects are not re-exported.",
   };
 }

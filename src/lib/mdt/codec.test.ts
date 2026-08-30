@@ -26,7 +26,7 @@ describe("MDT codec", () => {
   });
 
   it("throws a clear error on garbage", () => {
-    expect(() => decodeMdtString("ceci-n-est-pas-mdt")).toThrow(MdtDecodeError);
+    expect(() => decodeMdtString("this-is-not-mdt")).toThrow(MdtDecodeError);
   });
 });
 
@@ -46,7 +46,7 @@ describe("preset → pulls", () => {
   });
 });
 
-describe("fixture Autel des Crocs", () => {
+describe("Altar of Fangs fixture", () => {
   it("decode → pulls for the sample S2 string", () => {
     const file = path.resolve(process.cwd(), "fixtures/altar-of-fangs.mdt");
     const raw = readFileSync(file, "utf8");

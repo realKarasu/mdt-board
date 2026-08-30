@@ -285,6 +285,8 @@ h2,
 
 .map-image,
 .map-fallback {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: fill;
@@ -307,6 +309,83 @@ h2,
   height: 100%;
 }
 
+.map-under {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.map-over {
+  z-index: 4;
+  pointer-events: none;
+}
+
+.map-under .hull,
+.map-under line {
+  vector-effect: non-scaling-stroke;
+}
+
+.hull.dim {
+  opacity: 0.85;
+}
+
+.portrait-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.portrait {
+  position: absolute;
+  z-index: 2;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: visible;
+  padding: 0;
+  border: 2px solid #c4b8a4;
+  background: #1a1208;
+  cursor: pointer;
+}
+
+.portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.portrait.boss {
+  z-index: 3;
+  border-width: 0;
+}
+
+.portrait.active {
+  z-index: 4;
+}
+
+.portrait.dim {
+  opacity: 0.72;
+}
+
+.skull {
+  position: absolute;
+  right: -10%;
+  top: -8%;
+  width: 42%;
+  height: 42%;
+  border-radius: 50%;
+  background:
+    #111
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23f4efe6' d='M12 2c-4.4 0-8 3.1-8 7 0 2.4 1.3 4.5 3.3 5.7L6 19h3l.6 3h4.8l.6-3H18l-1.3-4.3C18.7 13.5 20 11.4 20 9c0-3.9-3.6-7-8-7zm-2.2 7.2a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8zm4.4 0a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8zM9.6 13.2c.7.8 1.5 1.2 2.4 1.2s1.7-.4 2.4-1.2l-1.1-.9c-.4.4-.8.6-1.3.6s-.9-.2-1.3-.6z'/></svg>")
+    center / 72% no-repeat;
+  border: 1px solid #f0c14b;
+  box-shadow: 0 0 0 1px #1a1208;
+}
+
 .map-path {
   fill: none;
   stroke: rgba(240, 193, 75, 0.45);
@@ -320,6 +399,7 @@ h2,
 
 .pull-num {
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .pull-num text {
