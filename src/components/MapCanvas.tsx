@@ -239,6 +239,14 @@ export function MapCanvas({
             <filter id="pull-glow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation={4 * k} />
             </filter>
+            <filter id="pull-frame-shadow" x="-25%" y="-25%" width="150%" height="150%">
+              <feDropShadow dx="0" dy={0.6 * k} stdDeviation={1.4 * k} floodColor="#1a1208" floodOpacity="0.7" />
+              <feDropShadow dx="0" dy="0" stdDeviation={2.2 * k} floodColor="#000" floodOpacity="0.35" />
+            </filter>
+            <filter id="pull-frame-shadow-active" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy={0.8 * k} stdDeviation={1.8 * k} floodColor="#0b0804" floodOpacity="0.85" />
+              <feDropShadow dx="0" dy="0" stdDeviation={3 * k} floodColor="#000" floodOpacity="0.45" />
+            </filter>
           </defs>
           {pullGeom.map((p) => {
             const active = p.n === route.currentPull;
@@ -246,11 +254,20 @@ export function MapCanvas({
             return (
               <g key={`hull-${p.n}`} className={active ? "hull active" : "hull dim"}>
                 <path
-                  className="pull-frame"
+                  className="pull-frame-shade"
                   d={frame}
                   fill={hexAlpha(p.color, active ? 0.12 : 0.05)}
-                  stroke={hexAlpha(p.color, active ? 0.92 : 0.55)}
-                  strokeWidth={2.4 * k}
+                  stroke="rgba(18, 12, 8, 0.72)"
+                  strokeWidth={(active ? 5.2 : 4.2) * k}
+                  strokeLinejoin="round"
+                  filter={active ? "url(#pull-frame-shadow-active)" : "url(#pull-frame-shadow)"}
+                />
+                <path
+                  className="pull-frame"
+                  d={frame}
+                  fill="none"
+                  stroke={hexAlpha(p.color, active ? 0.98 : 0.78)}
+                  strokeWidth={(active ? 2.6 : 2.1) * k}
                   strokeLinejoin="round"
                 />
                 {p.clusters.map((cluster, ci) => {
