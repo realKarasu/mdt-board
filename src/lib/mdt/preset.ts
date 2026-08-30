@@ -49,7 +49,15 @@ function pullFromTable(table: AceTable, color: string): Pull {
 }
 
 function pullsFromValue(value: AceTable): Pull[] {
-  const pullsTable = asRecord(value.pulls);
+  const raw = value.pulls;
+  // Blizzard CBOR may emit a Lua 1-based list as a JS array.
+  if (Array.isArray(raw)) {
+    const pulls = raw
+      .filter((row) => row && typeof row === "object")
+      .map((row, i) => pullFromTable(asRecord(row as AceValue), PULL_COLORS[i % PULL_COLORS.length]));
+    return pulls.length ? pulls : [emptyPull(0)];
+  }
+  const pullsTable = asRecord(raw);
   const keys = Object.keys(pullsTable)
     .map(Number)
     .filter((n) => Number.isInteger(n) && n > 0)

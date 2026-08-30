@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { deflate, deflateRaw } from "pako";
+import { Encoder } from "cbor-x";
 import { aceDeserialize, aceSerialize } from "./ace";
-import { decodeMdtString, encodeMdtString, MdtDecodeError } from "./codec";
+import { decodeMdtString, encodeMdt2String, encodeMdtString, MdtDecodeError } from "./codec";
 import { decodeRoute, encodeRoute, presetToRoute, routeToPreset } from "./preset";
 import { createRoute, emptyPull } from "../route";
 
@@ -27,6 +29,79 @@ describe("MDT codec", () => {
 
   it("throws a clear error on garbage", () => {
     expect(() => decodeMdtString("this-is-not-mdt")).toThrow(MdtDecodeError);
+  });
+});
+
+describe("MDT2 CBOR + zlib", () => {
+  const preset = routeToPreset(
+    (() => {
+      const route = createRoute(164, "Altar MDT2");
+      route.pulls = [
+        { ...emptyPull(0), clones: [{ enemyId: 1, cloneIdx: 1 }, { enemyId: 1, cloneIdx: 2 }], note: "lust" },
+        { ...emptyPull(1), clones: [{ enemyId: 2, cloneIdx: 1 }] },
+      ];
+      return route;
+    })(),
+  );
+
+  it("round-trips !~MDT2~ + zlib Deflate + CBOR", () => {
+    const encoded = encodeMdt2String(preset);
+    expect(encoded.startsWith("!~MDT2~")).toBe(true);
+    expect(/[+/=]/.test(encoded)).toBe(true);
+    const decoded = decodeMdtString(encoded);
+    expect(decoded).toMatchObject({ text: "Altar MDT2" });
+    const route = decodeRoute(encoded);
+    expect(route.dungeonIdx).toBe(164);
+    expect(route.pulls).toHaveLength(2);
+    expect(route.pulls[0].clones).toEqual([
+      { enemyId: 1, cloneIdx: 1 },
+      { enemyId: 1, cloneIdx: 2 },
+    ]);
+    expect(route.pulls[0].note).toBe("lust");
+  });
+
+  it("accepts a prefix-less standard-base64 MDT2 paste", () => {
+    const encoded = encodeMdt2String(preset);
+    const bare = encoded.slice("!~MDT2~".length);
+    const route = decodeRoute(bare);
+    expect(route.dungeonIdx).toBe(164);
+    expect(route.pulls[0].clones.length).toBe(2);
+  });
+
+  it("accepts whitespace inside an MDT2 paste", () => {
+    const encoded = encodeMdt2String(preset);
+    const wrapped = `${encoded.slice(0, 20)}\n${encoded.slice(20, 40)} ${encoded.slice(40)}`;
+    const route = decodeRoute(wrapped);
+    expect(route.dungeonIdx).toBe(164);
+  });
+
+  it("still decodes raw-deflate MDT2 (older encoder)", () => {
+    const encoder = new Encoder({ useRecords: false, mapsAsObjects: true });
+    const compressed = deflateRaw(encoder.encode(preset));
+    let b64 = "";
+    for (let i = 0; i < compressed.length; i += 1) b64 += String.fromCharCode(compressed[i]);
+    const encoded = `!~MDT2~${btoa(b64)}`;
+    const route = decodeRoute(encoded);
+    expect(route.dungeonIdx).toBe(164);
+    expect(route.pulls[0].note).toBe("lust");
+  });
+
+  it("decodes an independently zlib-wrapped CBOR payload (official shape)", () => {
+    const encoder = new Encoder({ useRecords: false, mapsAsObjects: true });
+    const compressed = deflate(encoder.encode(preset));
+    let b64 = "";
+    for (let i = 0; i < compressed.length; i += 1) b64 += String.fromCharCode(compressed[i]);
+    const encoded = `!~MDT2~${btoa(b64)}`;
+    expect(compressed[0]).toBe(0x78);
+    const route = decodeRoute(encoded);
+    expect(route.dungeonIdx).toBe(164);
+    expect(route.pulls.map((p) => p.clones)).toEqual([
+      [
+        { enemyId: 1, cloneIdx: 1 },
+        { enemyId: 1, cloneIdx: 2 },
+      ],
+      [{ enemyId: 2, cloneIdx: 1 }],
+    ]);
   });
 });
 
