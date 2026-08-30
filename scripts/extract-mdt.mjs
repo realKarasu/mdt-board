@@ -368,10 +368,13 @@ async function fetchPortraits(dungeons, outDir) {
         const res = await fetch(portraitUrl(id), { headers: { "User-Agent": "mdt-board/1.0" } });
         if (!res.ok) throw new Error(String(res.status));
         const buf = Buffer.from(await res.arrayBuffer());
-        await sharp(buf).resize(128, 128, { fit: "cover" }).webp({ quality: 82 }).toFile(dest);
+        await sharp(buf)
+          .resize(256, 256, { fit: "cover", withoutEnlargement: true })
+          .webp({ quality: 88 })
+          .toFile(dest);
       } catch {
         await sharp({
-          create: { width: 128, height: 128, channels: 3, background: { r: 42, g: 28, b: 22 } },
+          create: { width: 256, height: 256, channels: 3, background: { r: 42, g: 28, b: 22 } },
         })
           .webp({ quality: 70 })
           .toFile(dest);

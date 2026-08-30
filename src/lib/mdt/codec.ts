@@ -13,7 +13,8 @@ export class MdtDecodeError extends Error {
 const MDT2 = "!~MDT2~";
 
 function bytesToString(bytes: Uint8Array): string {
-  return new TextDecoder("latin1").decode(bytes);
+  // WoW addon strings (and our own encoder) are UTF-8.
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
 function stringToBytes(value: string): Uint8Array {

@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type SyntheticEvent,
+  type WheelEvent,
+} from "react";
 import type { Clone, CloneRef, Dungeon, Route } from "../types";
 import { hullPath, hexAlpha } from "../lib/hull";
 import { isPriorityMob, portraitSrc } from "../lib/portraits";
@@ -21,12 +29,16 @@ type Hover = {
   y: number;
 };
 
-function toPct(dungeon: Dungeon, x: number, y: number) {
-  return {
-    left: (x / dungeon.mapWidth) * 100,
-    top: (-y / dungeon.mapHeight) * 100,
-  };
-}
+/**
+ * World pixels per MDT map unit. The world is a fixed-size canvas
+ * (mapWidth * UNIT x mapHeight * UNIT) scaled uniformly to fit the stage,
+ * so SVG overlays and HTML portraits share one aspect ratio and circles
+ * can never become ellipses.
+ */
+const UNIT = 2;
+const TRASH_SIZE = 52;
+const BOSS_SIZE = 82;
+const HULL_PAD = 40;
 
 export function MapCanvas({
   dungeon,
@@ -36,7 +48,8 @@ export function MapCanvas({
   onToggleClone,
   onSelectPull,
 }: Props) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(0.4);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
@@ -44,10 +57,26 @@ export function MapCanvas({
   const floor = route.currentSublevel;
   const mapSrc = dungeon.maps[floor] ?? dungeon.maps[dungeon.floors[0]];
 
+  const worldW = dungeon.mapWidth * UNIT;
+  const worldH = dungeon.mapHeight * UNIT;
+
   useEffect(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
   }, [dungeon.dungeonIndex, floor]);
+
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        setFit(Math.min(r.width / worldW, r.height / worldH));
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [worldW, worldH]);
 
   const clones = useMemo(() => {
     const list: {
@@ -82,15 +111,14 @@ export function MapCanvas({
         const pts = pull.clones
           .map((ref) => findClone(dungeon, ref))
           .filter((c): c is Clone => c != null && c.sublevel === floor)
-          .map((c) => toPct(dungeon, c.x, c.y))
-          .map((p) => ({ x: p.left, y: p.top }));
+          .map((c) => ({ x: c.x * UNIT, y: -c.y * UNIT }));
         const c = pullCentroid(dungeon, pull, floor);
         return {
           n: i + 1,
           color: pull.color,
           note: pull.note,
           pts,
-          centroid: c ? toPct(dungeon, c.x, c.y) : null,
+          centroid: c ? { x: c.x * UNIT, y: -c.y * UNIT } : null,
         };
       })
       .filter((p) => p.pts.length > 0);
@@ -98,7 +126,7 @@ export function MapCanvas({
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    const next = Math.min(4.5, Math.max(0.7, zoom * (e.deltaY > 0 ? 0.9 : 1.12)));
+    const next = Math.min(6, Math.max(0.85, zoom * (e.deltaY > 0 ? 0.9 : 1.12)));
     setZoom(next);
   }
 
@@ -120,14 +148,20 @@ export function MapCanvas({
     drag.current = null;
   }
 
+  function hidePortrait(e: SyntheticEvent<HTMLImageElement>) {
+    e.currentTarget.style.display = "none";
+  }
+
   const entrance =
     dungeon.entrance && dungeon.entrance.sublevel === floor
-      ? toPct(dungeon, dungeon.entrance.x, dungeon.entrance.y)
+      ? { x: dungeon.entrance.x * UNIT, y: -dungeon.entrance.y * UNIT }
       : null;
+
+  const scale = fit * zoom;
 
   return (
     <div
-      ref={wrapRef}
+      ref={stageRef}
       className="map-stage"
       onWheel={onWheel}
       onPointerDown={onPointerDown}
@@ -141,7 +175,9 @@ export function MapCanvas({
       <div
         className="map-world"
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          width: worldW,
+          height: worldH,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
         }}
       >
         {mapSrc ? (
@@ -150,50 +186,92 @@ export function MapCanvas({
           <div className="map-fallback">{dungeon.englishName}</div>
         )}
 
-        <svg className="map-svg map-under" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <svg
+          className="map-svg map-under"
+          viewBox={`0 0 ${worldW} ${worldH}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <defs>
+            <filter id="pull-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="9" />
+            </filter>
+          </defs>
           {pullGeom.map((p) => {
             const active = p.n === route.currentPull;
+            const d = hullPath(p.pts, HULL_PAD);
             return (
-              <path
-                key={`hull-${p.n}`}
-                d={hullPath(p.pts, active ? 2.4 : 2.05)}
-                fill={hexAlpha(p.color, active ? 0.38 : 0.16)}
-                stroke={hexAlpha(p.color, active ? 0.95 : 0.55)}
-                strokeWidth={active ? 3 : 2.25}
-                className={active ? "hull active" : "hull dim"}
-              />
+              <g key={`hull-${p.n}`} className={active ? "hull active" : "hull dim"}>
+                <path
+                  d={d}
+                  fill={hexAlpha(p.color, active ? 0.13 : 0.06)}
+                  stroke={hexAlpha(p.color, active ? 0.85 : 0.45)}
+                  strokeWidth={18}
+                  strokeLinejoin="round"
+                  filter="url(#pull-glow)"
+                />
+                <path
+                  d={d}
+                  fill="none"
+                  stroke={hexAlpha(p.color, active ? 0.95 : 0.6)}
+                  strokeWidth={3}
+                  strokeLinejoin="round"
+                />
+              </g>
             );
           })}
           {showPath &&
             pullGeom.slice(0, -1).map((from, i) => {
               const to = pullGeom[i + 1];
               if (!from.centroid || !to.centroid) return null;
-              const ax = from.centroid.left;
-              const ay = from.centroid.top;
-              const bx = to.centroid.left;
-              const by = to.centroid.top;
-              const mx = ax + (bx - ax) * 0.68;
-              const my = ay + (by - ay) * 0.68;
-              const ang = Math.atan2(by - ay, bx - ax);
-              const ah = 1.15;
-              const aw = 0.85;
-              const p1 = `${mx + Math.cos(ang) * ah},${my + Math.sin(ang) * ah}`;
-              const p2 = `${mx + Math.cos(ang + 2.4) * aw},${my + Math.sin(ang + 2.4) * aw}`;
-              const p3 = `${mx + Math.cos(ang - 2.4) * aw},${my + Math.sin(ang - 2.4) * aw}`;
+              const dx = to.centroid.x - from.centroid.x;
+              const dy = to.centroid.y - from.centroid.y;
+              const len = Math.hypot(dx, dy) || 1;
+              const ux = dx / len;
+              const uy = dy / len;
+              const trim = Math.min(HULL_PAD + 18, len * 0.32);
+              const ax = from.centroid.x + ux * trim;
+              const ay = from.centroid.y + uy * trim;
+              const bx = to.centroid.x - ux * trim;
+              const by = to.centroid.y - uy * trim;
+              const ang = Math.atan2(uy, ux);
+              const ah = 16;
+              const aw = 10;
+              const tip = { x: bx + ux * ah * 0.6, y: by + uy * ah * 0.6 };
+              const p2 = `${tip.x - Math.cos(ang) * ah + Math.cos(ang + Math.PI / 2) * aw},${
+                tip.y - Math.sin(ang) * ah + Math.sin(ang + Math.PI / 2) * aw
+              }`;
+              const p3 = `${tip.x - Math.cos(ang) * ah - Math.cos(ang + Math.PI / 2) * aw},${
+                tip.y - Math.sin(ang) * ah - Math.sin(ang + Math.PI / 2) * aw
+              }`;
               const active = from.n === route.currentPull || to.n === route.currentPull;
               return (
-                <g key={`seg-${from.n}`}>
+                <g key={`seg-${from.n}`} opacity={active ? 0.95 : 0.5}>
                   <line
                     x1={ax}
                     y1={ay}
                     x2={bx}
                     y2={by}
-                    stroke={to.color}
-                    strokeWidth={active ? 6 : 4}
+                    stroke="#0d0a06"
+                    strokeWidth={7}
                     strokeLinecap="round"
-                    opacity={active ? 0.95 : 0.55}
+                    opacity={0.5}
                   />
-                  <polygon points={`${p1} ${p2} ${p3}`} fill="#fff" stroke="#111" strokeWidth={0.08} />
+                  <line
+                    x1={ax}
+                    y1={ay}
+                    x2={bx}
+                    y2={by}
+                    stroke="#ffa94d"
+                    strokeWidth={4}
+                    strokeLinecap="round"
+                  />
+                  <polygon
+                    points={`${tip.x},${tip.y} ${p2} ${p3}`}
+                    fill="#fff"
+                    stroke="#0d0a06"
+                    strokeWidth={1.5}
+                    strokeLinejoin="round"
+                  />
                 </g>
               );
             })}
@@ -203,22 +281,21 @@ export function MapCanvas({
           {clones.map((item) => {
             const owner = cloneOwner(route, { enemyId: item.enemyId, cloneIdx: item.clone.idx });
             const active = owner === route.currentPull;
-            const pos = toPct(dungeon, item.clone.x, item.clone.y);
-            const color = owner ? route.pulls[owner - 1].color : item.boss ? "#d4af37" : "#c4b8a4";
-            const size = item.boss ? (active ? 5.1 : 4.4) : active ? 3.7 : 3.05;
+            const color = owner ? route.pulls[owner - 1].color : null;
+            const size = item.boss ? BOSS_SIZE : TRASH_SIZE;
             return (
               <button
                 key={`${item.enemyId}-${item.clone.idx}`}
                 type="button"
-                className={`portrait ${item.boss ? "boss" : ""} ${active ? "active" : ""} ${owner && !active ? "dim" : ""}`}
+                className={`portrait ${item.boss ? "boss" : ""} ${active ? "active" : ""}`}
                 style={{
-                  left: `${pos.left}%`,
-                  top: `${pos.top}%`,
-                  width: `${size}%`,
-                  borderColor: color,
-                  boxShadow: item.boss
-                    ? `0 0 0 2px #1a1208, 0 0 0 3px ${color}, 0 0 10px ${hexAlpha(color, 0.55)}`
-                    : `0 0 0 1px #1a1208, 0 0 0 2px ${color}`,
+                  left: item.clone.x * UNIT,
+                  top: -item.clone.y * UNIT,
+                  width: size,
+                  height: size,
+                  boxShadow: color
+                    ? `0 0 0 3px ${hexAlpha(color, active ? 0.95 : 0.6)}, 0 2px 6px rgba(0,0,0,0.55)`
+                    : undefined,
                 }}
                 onPointerDown={(e) => {
                   if (!interactive) return;
@@ -237,50 +314,62 @@ export function MapCanvas({
                 }}
                 onPointerLeave={() => setHover(null)}
               >
-                <img src={portraitSrc(item.displayId)} alt="" draggable={false} />
+                <span className="portrait-fallback">{item.name.charAt(0)}</span>
+                <img src={portraitSrc(item.displayId)} alt="" draggable={false} onError={hidePortrait} />
                 {item.skull && <span className="skull" aria-hidden />}
               </button>
             );
           })}
         </div>
 
-        <svg className="map-svg map-over" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <svg
+          className="map-svg map-over"
+          viewBox={`0 0 ${worldW} ${worldH}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
           {entrance && (
             <polygon
               className="entrance"
-              points={diamond(entrance.left, entrance.top, 1.35)}
+              points={diamond(entrance.x, entrance.y, 16)}
               fill="#3b82f6"
-              stroke="#dbeafe"
-              strokeWidth={0.22}
+              stroke="#eaf2ff"
+              strokeWidth={3}
             />
           )}
           {pullGeom.map((p) => {
             if (!p.centroid) return null;
             const active = p.n === route.currentPull;
+            const r = active ? 20 : 17;
             return (
               <g
                 key={`num-${p.n}`}
                 className="pull-num"
+                opacity={active ? 1 : 0.88}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   onSelectPull?.(p.n);
                 }}
               >
                 <circle
-                  cx={p.centroid.left}
-                  cy={p.centroid.top}
-                  r={active ? 1.85 : 1.55}
-                  fill="#111"
-                  stroke="#fff"
-                  strokeWidth={0.22}
+                  cx={p.centroid.x}
+                  cy={p.centroid.y}
+                  r={r}
+                  fill="#0b0b0d"
+                  stroke={active ? "#fff" : "rgba(255,255,255,0.75)"}
+                  strokeWidth={2}
                 />
-                <text x={p.centroid.left} y={p.centroid.top + 0.52} textAnchor="middle" fontSize={active ? 2 : 1.65}>
+                <text
+                  x={p.centroid.x}
+                  y={p.centroid.y + (active ? 9 : 8)}
+                  textAnchor="middle"
+                  fontSize={active ? 27 : 23}
+                >
                   {p.n}
                 </text>
                 {p.note.trim() && (
-                  <g transform={`translate(${p.centroid.left + 1.7}, ${p.centroid.top - 1.7})`}>
-                    <circle r={0.95} fill="#f5d76e" stroke="#3a2a00" strokeWidth={0.12} />
-                    <text y={0.42} textAnchor="middle" fontSize={1.35} fill="#3a2a00">
+                  <g transform={`translate(${p.centroid.x + r + 9}, ${p.centroid.y - r - 2})`}>
+                    <circle r={9} fill="#f5d76e" stroke="#3a2a00" strokeWidth={1.5} />
+                    <text y={4.5} textAnchor="middle" fontSize={14} fill="#3a2a00">
                       !
                     </text>
                   </g>
@@ -302,9 +391,4 @@ export function MapCanvas({
 
 function diamond(x: number, y: number, r: number): string {
   return `${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}`;
-}
-
-export function cloneOnFloor(dungeon: Dungeon, ref: CloneRef, floor: number): boolean {
-  const c = findClone(dungeon, ref);
-  return Boolean(c && c.sublevel === floor);
 }
