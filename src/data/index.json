@@ -3,8 +3,7 @@
     "dungeonIndex": 164,
     "slug": "altar-of-fangs",
     "englishName": "Altar of Fangs",
-    "nameFr": "Autel des Crocs",
-    "shortFr": "Autel",
+    "shortName": "Altar",
     "totalCount": 817,
     "floors": [
       1
@@ -19,8 +18,7 @@
     "dungeonIndex": 160,
     "slug": "murder-row",
     "englishName": "Murder Row",
-    "nameFr": "Allée du Meurtre",
-    "shortFr": "Meurtre",
+    "shortName": "Murder Row",
     "totalCount": 655,
     "floors": [
       1
@@ -35,8 +33,7 @@
     "dungeonIndex": 161,
     "slug": "den-of-nalorakk",
     "englishName": "Den of Nalorakk",
-    "nameFr": "Tanière de Nalorakk",
-    "shortFr": "Nalorakk",
+    "shortName": "Nalorakk",
     "totalCount": 729,
     "floors": [
       1
@@ -51,8 +48,7 @@
     "dungeonIndex": 162,
     "slug": "the-blinding-vale",
     "englishName": "The Blinding Vale",
-    "nameFr": "Le Val aveuglant",
-    "shortFr": "Val",
+    "shortName": "Vale",
     "totalCount": 686,
     "floors": [
       1
@@ -67,8 +63,7 @@
     "dungeonIndex": 163,
     "slug": "voidscar-arena",
     "englishName": "Voidscar Arena",
-    "nameFr": "Arène de Voidscar",
-    "shortFr": "Voidscar",
+    "shortName": "Voidscar",
     "totalCount": 738,
     "floors": [
       1
@@ -82,9 +77,8 @@
   {
     "dungeonIndex": 17,
     "slug": "kings-rest",
-    "englishName": "King's Rest",
-    "nameFr": "Repos des rois",
-    "shortFr": "Rois",
+    "englishName": "Kings' Rest",
+    "shortName": "Kings' Rest",
     "totalCount": 608,
     "floors": [
       1
@@ -99,8 +93,7 @@
     "dungeonIndex": 20,
     "slug": "temple-of-sethraliss",
     "englishName": "Temple of Sethraliss",
-    "nameFr": "Temple de Sethraliss",
-    "shortFr": "Sethraliss",
+    "shortName": "Sethraliss",
     "totalCount": 687,
     "floors": [
       1
@@ -115,8 +108,7 @@
     "dungeonIndex": 42,
     "slug": "ruby-life-pools",
     "englishName": "Ruby Life Pools",
-    "nameFr": "Bassins de l'Essence rubis",
-    "shortFr": "Rubis",
+    "shortName": "Ruby",
     "totalCount": 551,
     "floors": [
       1

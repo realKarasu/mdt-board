@@ -19,62 +19,14 @@ const MAP_W = 840;
 const MAP_H = 555;
 
 const DUNGEONS = [
-  {
-    file: "AltarOfFangs.lua",
-    texture: "AltarOfFangs",
-    slug: "altar-of-fangs",
-    nameFr: "Autel des Crocs",
-    shortFr: "Autel",
-  },
-  {
-    file: "MurderRow.lua",
-    texture: "MurderRow",
-    slug: "murder-row",
-    nameFr: "Allée du Meurtre",
-    shortFr: "Meurtre",
-  },
-  {
-    file: "DenOfNalorakk.lua",
-    texture: "DenOfNalorakk",
-    slug: "den-of-nalorakk",
-    nameFr: "Tanière de Nalorakk",
-    shortFr: "Nalorakk",
-  },
-  {
-    file: "TheBlindingVale.lua",
-    texture: "TheBlindingVale",
-    slug: "the-blinding-vale",
-    nameFr: "Le Val aveuglant",
-    shortFr: "Val",
-  },
-  {
-    file: "VoidscarArena.lua",
-    texture: "VoidscarArena",
-    slug: "voidscar-arena",
-    nameFr: "Arène de Voidscar",
-    shortFr: "Voidscar",
-  },
-  {
-    file: "KingsRest.lua",
-    texture: "KingsRest",
-    slug: "kings-rest",
-    nameFr: "Repos des rois",
-    shortFr: "Rois",
-  },
-  {
-    file: "TempleOfSethraliss.lua",
-    texture: "TempleOfSethraliss",
-    slug: "temple-of-sethraliss",
-    nameFr: "Temple de Sethraliss",
-    shortFr: "Sethraliss",
-  },
-  {
-    file: "RubyLifePools.lua",
-    texture: "RubyLifePools",
-    slug: "ruby-life-pools",
-    nameFr: "Bassins de l'Essence rubis",
-    shortFr: "Rubis",
-  },
+  { file: "AltarOfFangs.lua", texture: "AltarOfFangs", slug: "altar-of-fangs", shortName: "Altar" },
+  { file: "MurderRow.lua", texture: "MurderRow", slug: "murder-row", shortName: "Murder Row" },
+  { file: "DenOfNalorakk.lua", texture: "DenOfNalorakk", slug: "den-of-nalorakk", shortName: "Nalorakk" },
+  { file: "TheBlindingVale.lua", texture: "TheBlindingVale", slug: "the-blinding-vale", shortName: "Vale" },
+  { file: "VoidscarArena.lua", texture: "VoidscarArena", slug: "voidscar-arena", shortName: "Voidscar" },
+  { file: "KingsRest.lua", texture: "KingsRest", slug: "kings-rest", shortName: "Kings' Rest", englishName: "Kings' Rest" },
+  { file: "TempleOfSethraliss.lua", texture: "TempleOfSethraliss", slug: "temple-of-sethraliss", shortName: "Sethraliss" },
+  { file: "RubyLifePools.lua", texture: "RubyLifePools", slug: "ruby-life-pools", shortName: "Ruby" },
 ];
 
 function skipWs(src, i) {
@@ -230,14 +182,14 @@ function extractDungeon(luaPath, meta) {
   if (!indexMatch) throw new Error(`No dungeonIndex in ${luaPath}`);
   const dungeonIndex = Number(indexMatch[1]);
   const englishMatch = src.match(/englishName = "([^"]+)"/);
-  const englishName = englishMatch?.[1] ?? meta.slug;
+  const englishName = meta.englishName ?? englishMatch?.[1] ?? meta.slug;
   const totalMatch = src.match(/dungeonTotalCount\[dungeonIndex\] = \{ normal = (\d+) \}/);
   const totalCount = totalMatch ? Number(totalMatch[1]) : 0;
 
   const sublevelsRaw = extractAssignment(src, "dungeonSubLevels") ?? { 1: englishName };
   const sublevels = luaToArray(sublevelsRaw).map((s) => ({
     id: s.key,
-    name: typeof s.value === "string" ? s.value : `${meta.nameFr} ${s.key}`,
+    name: typeof s.value === "string" ? s.value : `${englishName} ${s.key}`,
   }));
 
   const enemiesRaw = extractAssignment(src, "dungeonEnemies");
@@ -261,12 +213,28 @@ function extractDungeon(luaPath, meta) {
     return {
       id: key,
       npcId: Number(e.id),
+      displayId: Number(e.displayId ?? 0),
       name: String(e.name),
       count: Number(e.count ?? 0),
       isBoss: Boolean(e.isBoss),
+      creatureType: e.creatureType ? String(e.creatureType) : null,
+      stealthDetect: Boolean(e.stealthDetect),
       clones,
     };
   });
+
+  const poisRaw = extractAssignment(src, "mapPOIs") ?? {};
+  let entrance = null;
+  for (const floor of luaToArray(poisRaw)) {
+    for (const poi of luaToArray(floor.value ?? {})) {
+      const p = poi.value;
+      if (p && p.type === "dungeonEntrance") {
+        entrance = { x: Number(p.x), y: Number(p.y), sublevel: floor.key };
+        break;
+      }
+    }
+    if (entrance) break;
+  }
 
   const floors = [...new Set(enemies.flatMap((en) => en.clones.map((c) => c.sublevel)))].sort(
     (a, b) => a - b,
@@ -277,13 +245,13 @@ function extractDungeon(luaPath, meta) {
     dungeonIndex,
     slug: meta.slug,
     englishName,
-    nameFr: meta.nameFr,
-    shortFr: meta.shortFr,
+    shortName: meta.shortName,
     totalCount,
     mapWidth: MAP_W,
     mapHeight: MAP_H,
-    sublevels: sublevels.length ? sublevels : floors.map((id) => ({ id, name: meta.nameFr })),
+    sublevels: sublevels.length ? sublevels : floors.map((id) => ({ id, name: englishName })),
     floors,
+    entrance,
     enemies,
   };
 }
@@ -361,8 +329,7 @@ async function main() {
     dungeonIndex: d.dungeonIndex,
     slug: d.slug,
     englishName: d.englishName,
-    nameFr: d.nameFr,
-    shortFr: d.shortFr,
+    shortName: d.shortName,
     totalCount: d.totalCount,
     floors: d.floors,
     maps: d.maps,
@@ -376,9 +343,42 @@ async function main() {
   }
   writeFileSync(
     path.join(outData, "meta.ts"),
-    `export const SEASON_LABEL = "Midnight Saison 2";\nexport const PATCH = "12.1";\nexport const MAP_WIDTH = ${MAP_W};\nexport const MAP_HEIGHT = ${MAP_H};\nexport const TILE_COLS = ${TILE_COLS};\nexport const TILE_ROWS = ${TILE_ROWS};\n`,
+    `export const SEASON_LABEL = "Midnight Season 2";\nexport const PATCH = "12.1";\nexport const MAP_WIDTH = ${MAP_W};\nexport const MAP_HEIGHT = ${MAP_H};\nexport const TILE_COLS = ${TILE_COLS};\nexport const TILE_ROWS = ${TILE_ROWS};\n`,
   );
+
+  await fetchPortraits(dungeons, path.join(ROOT, "public", "portraits"));
   console.log("Wrote", dungeons.length, "dungeons");
+}
+
+function portraitUrl(displayId) {
+  return `https://wow.zamimg.com/modelviewer/live/webthumbs/npc/${displayId % 256}/${displayId}.webp`;
+}
+
+async function fetchPortraits(dungeons, outDir) {
+  mkdirSync(outDir, { recursive: true });
+  const ids = [...new Set(dungeons.flatMap((d) => d.enemies.map((e) => e.displayId).filter(Boolean)))];
+  console.log("Portraits", ids.length);
+  const pending = [...ids];
+  const workers = Array.from({ length: 8 }, async () => {
+    while (pending.length) {
+      const id = pending.pop();
+      const dest = path.join(outDir, `${id}.webp`);
+      if (existsSync(dest)) continue;
+      try {
+        const res = await fetch(portraitUrl(id), { headers: { "User-Agent": "mdt-board/1.0" } });
+        if (!res.ok) throw new Error(String(res.status));
+        const buf = Buffer.from(await res.arrayBuffer());
+        await sharp(buf).resize(128, 128, { fit: "cover" }).webp({ quality: 82 }).toFile(dest);
+      } catch {
+        await sharp({
+          create: { width: 128, height: 128, channels: 3, background: { r: 42, g: 28, b: 22 } },
+        })
+          .webp({ quality: 70 })
+          .toFile(dest);
+      }
+    }
+  });
+  await Promise.all(workers);
 }
 
 main().catch((err) => {

@@ -15,9 +15,12 @@ export type Clone = {
 export type Enemy = {
   id: number;
   npcId: number;
+  displayId: number;
   name: string;
   count: number;
   isBoss: boolean;
+  creatureType: string | null;
+  stealthDetect?: boolean;
   clones: Clone[];
 };
 
@@ -26,18 +29,24 @@ export type Sublevel = {
   name: string;
 };
 
+export type Entrance = {
+  x: number;
+  y: number;
+  sublevel: number;
+};
+
 export type Dungeon = {
   dungeonIndex: number;
   slug: string;
   englishName: string;
-  nameFr: string;
-  shortFr: string;
+  shortName: string;
   totalCount: number;
   mapWidth: number;
   mapHeight: number;
   sublevels: Sublevel[];
   floors: number[];
   maps: Record<number, string>;
+  entrance: Entrance | null;
   enemies: Enemy[];
 };
 
@@ -45,8 +54,7 @@ export type DungeonSummary = {
   dungeonIndex: number;
   slug: string;
   englishName: string;
-  nameFr: string;
-  shortFr: string;
+  shortName: string;
   totalCount: number;
   floors: number[];
   maps: Record<number, string>;
