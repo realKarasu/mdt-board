@@ -22,13 +22,22 @@ Les index, positions de PNJ, `count` et textures viennent de [MythicDungeonTools
 ## Lancer en local
 
 ```bash
-git clone https://github.com/REMPLACER/mdt-board.git
+git clone https://github.com/<ton-compte>/mdt-board.git
 cd mdt-board
 npm install
 npm run dev
 ```
 
-Ouvre **http://127.0.0.1:43173** (pas de déploiement : tout tourne sur ta machine).
+Ouvre **http://127.0.0.1:43173** (pas de Vercel, pas de deploy : tout tourne en localhost).
+
+Pour publier ce dossier en dépôt **public** depuis une machine où `gh` est connecté à ton GitHub :
+
+```bash
+gh auth login
+gh repo create mdt-board --public --source=. --remote=github --push
+```
+
+Le dépôt public GitHub est la source de vérité demandée. Pas de hosting distant requis ensuite.
 
 Tests : `npm test`.
 
