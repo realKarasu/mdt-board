@@ -177,7 +177,7 @@ export function MapCanvas({
         style={{
           width: worldW,
           height: worldH,
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+          transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${scale})`,
         }}
       >
         {mapSrc ? (

@@ -271,13 +271,17 @@ h2,
   background: #050608;
   cursor: grab;
   touch-action: none;
-  display: grid;
-  place-items: center;
 }
 
+/*
+ * The world is an oversized fixed-px canvas. It is centered explicitly via
+ * left/top 50% plus translate(-50%, -50%) in the inline transform, because
+ * grid centering is unreliable for children larger than the container.
+ */
 .map-world {
-  position: relative;
-  flex: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   transform-origin: center center;
 }
 
