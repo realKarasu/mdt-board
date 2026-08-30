@@ -10,7 +10,7 @@ import {
 import type { Clone, CloneRef, Dungeon, Route } from "../types";
 import { hullPath, hexAlpha } from "../lib/hull";
 import { isPriorityMob, portraitSrc } from "../lib/portraits";
-import { cloneOwner, findClone, pullCentroid } from "../lib/route";
+import { cloneOwner, findClone, formatPct, pct, pullCentroid, pullForces } from "../lib/route";
 
 type Props = {
   dungeon: Dungeon;
@@ -126,15 +126,25 @@ export function MapCanvas({
   const pullGeom = useMemo(() => {
     return route.pulls
       .map((pull, i) => {
-        const pts = pull.clones
-          .map((ref) => findClone(dungeon, ref))
-          .filter((c): c is Clone => c != null && c.sublevel === floor)
-          .map((c) => ({ x: c.x * UNIT, y: -c.y * UNIT }));
+        const onFloor = pull.clones
+          .map((ref) => ({ ref, clone: findClone(dungeon, ref) }))
+          .filter((row): row is { ref: CloneRef; clone: Clone } => row.clone != null && row.clone.sublevel === floor);
+        const byPack = new Map<string, { x: number; y: number }[]>();
+        for (const { ref, clone } of onFloor) {
+          const key = clone.group != null ? `g:${clone.group}` : `solo:${ref.enemyId}:${ref.cloneIdx}`;
+          const list = byPack.get(key) ?? [];
+          list.push({ x: clone.x * UNIT, y: -clone.y * UNIT });
+          byPack.set(key, list);
+        }
+        const clusters = [...byPack.values()];
+        const pts = clusters.flat();
         const c = pullCentroid(dungeon, pull, floor);
         return {
           n: i + 1,
           color: pull.color,
           note: pull.note,
+          forcePct: formatPct(pct(pullForces(dungeon, pull), dungeon.totalCount)),
+          clusters,
           pts,
           centroid: c ? { x: c.x * UNIT, y: -c.y * UNIT } : null,
         };
@@ -176,7 +186,7 @@ export function MapCanvas({
       : null;
 
   const scale = fit * zoom;
-  const hullPad = 11 * k;
+  const hullPad = 8 * k;
 
   return (
     <div
@@ -217,24 +227,30 @@ export function MapCanvas({
           </defs>
           {pullGeom.map((p) => {
             const active = p.n === route.currentPull;
-            const d = hullPath(p.pts, hullPad);
             return (
               <g key={`hull-${p.n}`} className={active ? "hull active" : "hull dim"}>
-                <path
-                  d={d}
-                  fill={hexAlpha(p.color, active ? 0.13 : 0.06)}
-                  stroke={hexAlpha(p.color, active ? 0.85 : 0.45)}
-                  strokeWidth={8 * k}
-                  strokeLinejoin="round"
-                  filter="url(#pull-glow)"
-                />
-                <path
-                  d={d}
-                  fill="none"
-                  stroke={hexAlpha(p.color, active ? 0.95 : 0.6)}
-                  strokeWidth={1.4 * k}
-                  strokeLinejoin="round"
-                />
+                {p.clusters.map((cluster, ci) => {
+                  const d = hullPath(cluster, hullPad);
+                  return (
+                    <g key={`pack-${p.n}-${ci}`}>
+                      <path
+                        d={d}
+                        fill={hexAlpha(p.color, active ? 0.1 : 0.04)}
+                        stroke={hexAlpha(p.color, active ? 0.85 : 0.42)}
+                        strokeWidth={7 * k}
+                        strokeLinejoin="round"
+                        filter="url(#pull-glow)"
+                      />
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke={hexAlpha(p.color, active ? 0.95 : 0.55)}
+                        strokeWidth={1.25 * k}
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  );
+                })}
               </g>
             );
           })}
@@ -303,13 +319,14 @@ export function MapCanvas({
             const color = owner ? route.pulls[owner - 1].color : null;
             const size = (item.boss ? BOSS_PX : TRASH_PX) * k;
             const rim = (item.boss ? 1.6 : 1) * k;
+            const rimColor = item.boss ? "#f0c14b" : color ?? "rgba(255, 255, 255, 0.92)";
             const shadows = [
               item.boss
                 ? `0 0 ${6 * k}px ${hexAlpha("#f0c14b", 0.55)}`
                 : `0 ${k}px ${3 * k}px rgba(0, 0, 0, 0.55)`,
             ];
-            if (color) {
-              shadows.unshift(`0 0 0 ${1.6 * k}px ${hexAlpha(color, active ? 0.95 : 0.6)}`);
+            if (color && !item.boss) {
+              shadows.unshift(`0 0 ${4 * k}px ${hexAlpha(color, active ? 0.7 : 0.4)}`);
             }
             return (
               <button
@@ -322,6 +339,7 @@ export function MapCanvas({
                   width: size,
                   height: size,
                   borderWidth: rim,
+                  borderColor: rimColor,
                   boxShadow: shadows.join(", "),
                 }}
                 onPointerDown={(e) => {
@@ -345,7 +363,7 @@ export function MapCanvas({
                   {item.name.charAt(0)}
                 </span>
                 <img src={portraitSrc(item.displayId)} alt="" draggable={false} onError={hidePortrait} />
-                {item.skull && <span className="skull" style={{ width: 8 * k, height: 8 * k }} aria-hidden />}
+                {item.skull && <span className="elite-star" style={{ width: 8 * k, height: 8 * k }} aria-hidden />}
               </button>
             );
           })}
@@ -368,35 +386,39 @@ export function MapCanvas({
           {pullGeom.map((p) => {
             if (!p.centroid) return null;
             const active = p.n === route.currentPull;
-            const r = (active ? 11 : 9.5) * k;
+            const label = `${p.n} · ${p.forcePct}`;
+            const w = (active ? 52 : 48) * k;
+            const h = (active ? 16 : 14) * k;
             return (
               <g
                 key={`num-${p.n}`}
                 className="pull-num"
-                opacity={active ? 1 : 0.88}
+                opacity={active ? 1 : 0.9}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   onSelectPull?.(p.n);
                 }}
               >
-                <circle
-                  cx={p.centroid.x}
-                  cy={p.centroid.y}
-                  r={r}
+                <rect
+                  x={p.centroid.x - w / 2}
+                  y={p.centroid.y - h / 2}
+                  width={w}
+                  height={h}
+                  rx={h / 2}
                   fill="#0b0b0d"
-                  stroke={active ? "#fff" : "rgba(255,255,255,0.75)"}
-                  strokeWidth={1.1 * k}
+                  stroke={p.color}
+                  strokeWidth={1.2 * k}
                 />
                 <text
                   x={p.centroid.x}
-                  y={p.centroid.y + (active ? 5.2 : 4.6) * k}
+                  y={p.centroid.y + (active ? 4.4 : 3.8) * k}
                   textAnchor="middle"
-                  fontSize={(active ? 15 : 13) * k}
+                  fontSize={(active ? 11 : 10) * k}
                 >
-                  {p.n}
+                  {label}
                 </text>
                 {p.note.trim() && (
-                  <g transform={`translate(${p.centroid.x + r + 5 * k}, ${p.centroid.y - r - k})`}>
+                  <g transform={`translate(${p.centroid.x + w / 2 + 6 * k}, ${p.centroid.y - h / 2})`}>
                     <circle r={4.6 * k} fill="#f5d76e" stroke="#3a2a00" strokeWidth={0.8 * k} />
                     <text y={2.4 * k} textAnchor="middle" fontSize={7 * k} fill="#3a2a00">
                       !

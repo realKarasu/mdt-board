@@ -152,7 +152,7 @@ export default function App() {
           onName={(name) => persist({ ...route, name, updatedAt: Date.now() })}
           onTogglePath={() => setShowPath((v) => !v)}
           onSelectPull={(n) => setRoute(setCurrentPull(route, n))}
-          onToggleClone={(ref) => persist(toggleClone(route, ref))}
+          onToggleClone={(ref) => persist(toggleClone(route, ref, dungeon))}
           onAddPull={() => persist(addPull(route))}
           onDeletePull={(i) => persist(deletePull(route, i))}
           onMovePull={(from, to) => persist(movePull(route, from, to))}

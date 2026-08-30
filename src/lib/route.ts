@@ -81,20 +81,35 @@ export function cloneOwner(route: Route, ref: CloneRef): number | null {
   return null;
 }
 
-export function toggleClone(route: Route, ref: CloneRef): Route {
+function sameRef(a: CloneRef, b: CloneRef): boolean {
+  return a.enemyId === b.enemyId && a.cloneIdx === b.cloneIdx;
+}
+
+/** All clones on this floor that share MDT `g` with `ref`. Ungrouped stays a singleton. */
+export function clonesInGroup(dungeon: Dungeon, ref: CloneRef, floor: number): CloneRef[] {
+  const clicked = findClone(dungeon, ref);
+  if (!clicked || clicked.group == null) return [ref];
+  const out: CloneRef[] = [];
+  for (const enemy of dungeon.enemies) {
+    for (const clone of enemy.clones) {
+      if (clone.sublevel !== floor) continue;
+      if (clone.group !== clicked.group) continue;
+      out.push({ enemyId: enemy.id, cloneIdx: clone.idx });
+    }
+  }
+  return out.length ? out : [ref];
+}
+
+export function toggleClone(route: Route, ref: CloneRef, dungeon?: Dungeon): Route {
+  const refs = dungeon ? clonesInGroup(dungeon, ref, route.currentSublevel) : [ref];
   const pulls = route.pulls.map((p) => ({ ...p, clones: [...p.clones] }));
   const current = pulls[route.currentPull - 1];
   if (!current) return route;
-  const here = current.clones.findIndex((c) => c.enemyId === ref.enemyId && c.cloneIdx === ref.cloneIdx);
-  if (here >= 0) {
-    current.clones.splice(here, 1);
-  } else {
-    for (const pull of pulls) {
-      const idx = pull.clones.findIndex((c) => c.enemyId === ref.enemyId && c.cloneIdx === ref.cloneIdx);
-      if (idx >= 0) pull.clones.splice(idx, 1);
-    }
-    current.clones.push(ref);
+  const allHere = refs.every((r) => current.clones.some((c) => sameRef(c, r)));
+  for (const pull of pulls) {
+    pull.clones = pull.clones.filter((c) => !refs.some((r) => sameRef(c, r)));
   }
+  if (!allHere) current.clones.push(...refs);
   return { ...route, pulls, updatedAt: Date.now() };
 }
 

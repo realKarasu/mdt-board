@@ -113,7 +113,8 @@ export function EditorMode({
         />
       </div>
       <p className="hint">
-        Click an NPC to add or remove it from pull {route.currentPull}. Scroll to zoom, drag to pan.
+        Click a pack to add or remove the whole MDT group from pull {route.currentPull}.
+        Ungrouped NPCs toggle alone. Scroll to zoom, drag to pan.
       </p>
     </div>
   );
