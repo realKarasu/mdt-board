@@ -368,8 +368,12 @@ async function fetchPortraits(dungeons, outDir) {
         const res = await fetch(portraitUrl(id), { headers: { "User-Agent": "mdt-board/1.0" } });
         if (!res.ok) throw new Error(String(res.status));
         const buf = Buffer.from(await res.arrayBuffer());
+        // Thumbs are full-body renders on transparency; trim the empty
+        // border and crop toward the salient region so the creature
+        // fills the circular portrait.
         await sharp(buf)
-          .resize(256, 256, { fit: "cover", withoutEnlargement: true })
+          .trim({ threshold: 12 })
+          .resize(256, 256, { fit: "cover", position: sharp.strategy.attention })
           .webp({ quality: 88 })
           .toFile(dest);
       } catch {
