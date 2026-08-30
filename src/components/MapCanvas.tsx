@@ -42,6 +42,8 @@ type Hover = {
 const UNIT = 2;
 const TRASH_PX = 20;
 const BOSS_PX = 30;
+const ENTRANCE_PX = 24;
+const ENTRANCE_ICON = "/icons/spell_arcane_portaldalaran.jpg";
 
 export function MapCanvas({
   dungeon,
@@ -367,6 +369,28 @@ export function MapCanvas({
               </button>
             );
           })}
+          {entrance && (
+            <div
+              className="entrance-pin"
+              style={{
+                left: entrance.x,
+                top: entrance.y,
+                width: ENTRANCE_PX * k,
+                height: ENTRANCE_PX * k,
+              }}
+              title="Entrance"
+            >
+              <span
+                className="entrance-stem"
+                style={{
+                  borderLeftWidth: 3.2 * k,
+                  borderRightWidth: 3.2 * k,
+                  borderTopWidth: 10 * k,
+                }}
+              />
+              <img src={ENTRANCE_ICON} alt="Entrance" draggable={false} />
+            </div>
+          )}
         </div>
 
         <svg
@@ -374,15 +398,6 @@ export function MapCanvas({
           viewBox={`0 0 ${worldW} ${worldH}`}
           preserveAspectRatio="xMidYMid meet"
         >
-          {entrance && (
-            <polygon
-              className="entrance"
-              points={diamond(entrance.x, entrance.y, 8 * k)}
-              fill="#3b82f6"
-              stroke="#eaf2ff"
-              strokeWidth={1.4 * k}
-            />
-          )}
           {pullGeom.map((p) => {
             if (!p.centroid) return null;
             const active = p.n === route.currentPull;
@@ -440,6 +455,3 @@ export function MapCanvas({
   );
 }
 
-function diamond(x: number, y: number, r: number): string {
-  return `${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}`;
-}
