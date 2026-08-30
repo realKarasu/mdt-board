@@ -12,9 +12,11 @@ export class MdtDecodeError extends Error {
 
 const MDT2 = "!~MDT2~";
 
-/** Blizzard C_EncodingUtil CBOR: maps, no cbor-x record tags. */
-const cborDecoder = new Decoder({ useRecords: false, mapsAsObjects: true });
+/** Our encoder: text-string map keys, no record tags. */
 const cborEncoder = new Encoder({ useRecords: false, mapsAsObjects: true });
+/** JS objects reject Uint8Array keys; Blizzard uses those (major type 2). */
+const cborObjectDecoder = new Decoder({ useRecords: false, mapsAsObjects: true });
+const cborMapDecoder = new Decoder({ useRecords: false, mapsAsObjects: false });
 
 function bytesToString(bytes: Uint8Array): string {
   return new TextDecoder("utf-8").decode(bytes);
@@ -71,8 +73,69 @@ function inflateMdt2Candidates(bytes: Uint8Array): Uint8Array[] {
   return out;
 }
 
+function keyToString(key: unknown): string {
+  if (typeof key === "string") return key;
+  if (typeof key === "number" || typeof key === "bigint" || typeof key === "boolean") {
+    return String(key);
+  }
+  const bytes = asBytes(key);
+  if (bytes) {
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      return new TextDecoder("latin1").decode(bytes);
+    }
+  }
+  return String(key);
+}
+
+function asBytes(value: unknown): Uint8Array | null {
+  if (value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return new Uint8Array(value);
+  if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  }
+  return null;
+}
+
+/** Map → object; byte-string keys/values → UTF-8 (latin1 fallback); arrays stay arrays. */
+export function fromCbor(value: unknown): AceValue {
+  if (value == null) return null;
+  if (typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") return value;
+  if (typeof value === "bigint") return Number(value);
+  const bytes = asBytes(value);
+  if (bytes) {
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      return new TextDecoder("latin1").decode(bytes);
+    }
+  }
+  if (value instanceof Map) {
+    const table: Record<string, AceValue> = {};
+    for (const [k, v] of value) table[keyToString(k)] = fromCbor(v);
+    return table;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => fromCbor(item)) as unknown as AceValue;
+  }
+  if (typeof value === "object") {
+    const table: Record<string, AceValue> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      table[k] = fromCbor(v);
+    }
+    return table;
+  }
+  return null;
+}
+
 function decodeCbor(bytes: Uint8Array): AceValue {
-  return cborDecoder.decode(bytes) as AceValue;
+  try {
+    return fromCbor(cborObjectDecoder.decode(bytes));
+  } catch {
+    return fromCbor(cborMapDecoder.decode(bytes));
+  }
 }
 
 function decodeLegacy(raw: string): AceValue {

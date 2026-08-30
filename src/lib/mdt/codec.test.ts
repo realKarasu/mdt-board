@@ -86,6 +86,23 @@ describe("MDT2 CBOR + zlib", () => {
     expect(route.pulls[0].note).toBe("lust");
   });
 
+  it("decodes Blizzard-style maps whose keys are CBOR byte strings", () => {
+    // C_EncodingUtil.SerializeCBOR uses major type 2 keys, not text strings.
+    const payload = blizzardCborPreset();
+    const compressed = deflate(payload);
+    let b64 = "";
+    for (let i = 0; i < compressed.length; i += 1) b64 += String.fromCharCode(compressed[i]);
+    const encoded = `!~MDT2~${btoa(b64)}`;
+    const route = decodeRoute(encoded);
+    expect(route.dungeonIdx).toBe(164);
+    expect(route.name).toBe("Altar live");
+    expect(route.pulls[0].clones).toEqual([
+      { enemyId: 1, cloneIdx: 1 },
+      { enemyId: 1, cloneIdx: 2 },
+    ]);
+    expect(route.pulls[0].note).toBe("lust");
+  });
+
   it("decodes an independently zlib-wrapped CBOR payload (official shape)", () => {
     const encoder = new Encoder({ useRecords: false, mapsAsObjects: true });
     const compressed = deflate(encoder.encode(preset));
@@ -120,6 +137,61 @@ describe("preset → pulls", () => {
     expect(back.pulls[0].note).toBe("grip");
   });
 });
+
+/** Minimal CBOR writer: maps with major-type-2 (byte string) keys, like Blizzard. */
+function blizzardCborPreset(): Uint8Array {
+  const out: number[] = [];
+  const u8 = (n: number) => out.push(n & 0xff);
+  const major = (type: number, n: number) => {
+    if (n < 24) u8((type << 5) | n);
+    else if (n < 256) {
+      u8((type << 5) | 24);
+      u8(n);
+    } else {
+      u8((type << 5) | 25);
+      u8(n >> 8);
+      u8(n);
+    }
+  };
+  const bytes = (s: string) => {
+    const b = new TextEncoder().encode(s);
+    major(2, b.length);
+    for (const x of b) u8(x);
+  };
+  const text = (s: string) => {
+    const b = new TextEncoder().encode(s);
+    major(3, b.length);
+    for (const x of b) u8(x);
+  };
+  const uint = (n: number) => major(0, n);
+  const map = (n: number) => major(5, n);
+
+  // { text, uid, value: { currentDungeonIdx, currentPull, pulls: { 1: { 1: { 1: 1, 2: 2 }, note } } } }
+  map(3);
+  bytes("text");
+  text("Altar live");
+  bytes("uid");
+  text("live11abcde");
+  bytes("value");
+  map(3);
+  bytes("currentDungeonIdx");
+  uint(164);
+  bytes("currentPull");
+  uint(1);
+  bytes("pulls");
+  map(1);
+  uint(1);
+  map(2);
+  uint(1);
+  map(2);
+  uint(1);
+  uint(1);
+  uint(2);
+  uint(2);
+  bytes("note");
+  text("lust");
+  return Uint8Array.from(out);
+}
 
 describe("Altar of Fangs fixture", () => {
   it("decode → pulls for the sample S2 string", () => {
