@@ -5,6 +5,8 @@ type Props = {
   dungeon: Dungeon;
   route: Route;
   compact?: boolean;
+  collapsed?: boolean;
+  onToggle?: () => void;
   onSelect: (n: number) => void;
   onAdd?: () => void;
   onDelete?: (index: number) => void;
@@ -16,6 +18,8 @@ export function PullSidebar({
   dungeon,
   route,
   compact,
+  collapsed,
+  onToggle,
   onSelect,
   onAdd,
   onDelete,
@@ -23,8 +27,13 @@ export function PullSidebar({
   onNote,
 }: Props) {
   return (
-    <aside className={`pull-side ${compact ? "compact" : ""}`}>
+    <aside className={`pull-side ${compact ? "compact" : ""} ${collapsed ? "collapsed" : ""}`}>
       <header>
+        {onToggle && (
+          <button type="button" className="sidebar-toggle" onClick={onToggle} aria-label={collapsed ? "Show pulls" : "Hide pulls"}>
+            {collapsed ? "[" : "]"}
+          </button>
+        )}
         <h2>Pulls</h2>
         {onAdd && (
           <button type="button" className="btn ghost" onClick={onAdd}>

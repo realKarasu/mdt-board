@@ -75,6 +75,27 @@ export function deleteSavedRoute(id: string): void {
   write(store);
 }
 
+const SIDEBAR_KEY = "mdt-board:sidebar";
+
+export function readSidebarOpen(): boolean {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_KEY);
+    if (raw === "0") return false;
+    if (raw === "1") return true;
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
+export function writeSidebarOpen(open: boolean): void {
+  try {
+    localStorage.setItem(SIDEBAR_KEY, open ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
 export function lastSavedRoute(): Route | null {
   const store = read();
   return store.routes.find((r) => r.id === store.lastRouteId) ?? store.routes[0] ?? null;

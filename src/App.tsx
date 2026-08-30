@@ -14,7 +14,7 @@ import {
   setCurrentPull,
   toggleClone,
 } from "./lib/route";
-import { deleteSavedRoute, listSavedRoutes, saveRoute } from "./lib/storage";
+import { deleteSavedRoute, listSavedRoutes, readSidebarOpen, saveRoute, writeSidebarOpen } from "./lib/storage";
 import type { AppMode, Route } from "./types";
 import sampleMdt from "../fixtures/altar-of-fangs.mdt?raw";
 
@@ -27,6 +27,15 @@ export default function App() {
   const [importError, setImportError] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
+
+  function toggleSidebar() {
+    setSidebarOpen((open) => {
+      const next = !open;
+      writeSidebarOpen(next);
+      return next;
+    });
+  }
 
   const dungeon = route ? getDungeon(route.dungeonIdx) : undefined;
 
@@ -89,6 +98,12 @@ export default function App() {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
+      if (e.key === "]" && (mode === "editor" || mode === "board")) {
+        e.preventDefault();
+        toggleSidebar();
+        return;
+      }
+
       if (mode === "board") {
         if (e.key === "Escape") {
           setMode("editor");
@@ -119,7 +134,7 @@ export default function App() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [route, mode, importOpen, exportOpen]);
+  }, [route, mode, importOpen, exportOpen, sidebarOpen]);
 
   return (
     <div className="app">
@@ -172,6 +187,8 @@ export default function App() {
             flash("Route saved locally");
           }}
           onHome={() => setMode("picker")}
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={toggleSidebar}
         />
       )}
 
@@ -182,6 +199,8 @@ export default function App() {
           showPath={showPath}
           onSelectPull={(n) => setRoute(setCurrentPull(route, n))}
           onEditor={() => setMode("editor")}
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={toggleSidebar}
         />
       )}
 

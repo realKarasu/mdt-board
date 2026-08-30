@@ -105,11 +105,11 @@ export function toggleClone(route: Route, ref: CloneRef, dungeon?: Dungeon): Rou
   const pulls = route.pulls.map((p) => ({ ...p, clones: [...p.clones] }));
   const current = pulls[route.currentPull - 1];
   if (!current) return route;
-  const allHere = refs.every((r) => current.clones.some((c) => sameRef(c, r)));
+  const inCurrent = refs.some((r) => current.clones.some((c) => sameRef(c, r)));
   for (const pull of pulls) {
     pull.clones = pull.clones.filter((c) => !refs.some((r) => sameRef(c, r)));
   }
-  if (!allHere) current.clones.push(...refs);
+  if (!inCurrent) current.clones.push(...refs);
   return { ...route, pulls, updatedAt: Date.now() };
 }
 

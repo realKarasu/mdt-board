@@ -21,6 +21,8 @@ type Props = {
   onExport: () => void;
   onSave: () => void;
   onHome: () => void;
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
 };
 
 export function EditorMode({
@@ -41,6 +43,8 @@ export function EditorMode({
   onExport,
   onSave,
   onHome,
+  sidebarOpen,
+  onToggleSidebar,
 }: Props) {
   const total = routeForces(dungeon, route);
   const totalPct = pct(total, dungeon.totalCount);
@@ -89,11 +93,14 @@ export function EditorMode({
         <button type="button" className="btn" onClick={onSave}>
           Save
         </button>
+        <button type="button" className="btn" onClick={onToggleSidebar}>
+          Pulls
+        </button>
         <button type="button" className="btn primary" onClick={onBoard}>
           Board
         </button>
       </header>
-      <div className="editor-main">
+      <div className={`editor-main ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
         <MapCanvas
           dungeon={dungeon}
           route={route}
@@ -105,6 +112,8 @@ export function EditorMode({
         <PullSidebar
           dungeon={dungeon}
           route={route}
+          collapsed={!sidebarOpen}
+          onToggle={onToggleSidebar}
           onSelect={onSelectPull}
           onAdd={onAddPull}
           onDelete={onDeletePull}

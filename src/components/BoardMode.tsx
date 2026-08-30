@@ -8,9 +8,11 @@ type Props = {
   showPath: boolean;
   onSelectPull: (n: number) => void;
   onEditor: () => void;
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
 };
 
-export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: Props) {
+export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor, sidebarOpen, onToggleSidebar }: Props) {
   const pull = route.pulls[route.currentPull - 1];
   const done = routeForces(dungeon, route, route.currentPull);
   const total = routeForces(dungeon, route);
@@ -32,12 +34,15 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
             {total} / {dungeon.totalCount}
           </span>
         </div>
+        <button type="button" className="btn ghost" onClick={onToggleSidebar}>
+          Pulls
+        </button>
         <button type="button" className="btn ghost" onClick={onEditor}>
           Editor · Esc
         </button>
       </header>
 
-      <div className="board-main">
+      <div className={`board-main ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
         <MapCanvas
           dungeon={dungeon}
           route={route}
@@ -45,7 +50,10 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
           showPath={showPath}
           onSelectPull={onSelectPull}
         />
-        <section className="board-pull">
+        <section className={`board-pull ${sidebarOpen ? "" : "collapsed"}`}>
+          <button type="button" className="sidebar-toggle" onClick={onToggleSidebar} aria-label={sidebarOpen ? "Hide pulls" : "Show pulls"}>
+            {sidebarOpen ? "]" : "["}
+          </button>
           <p className="kicker">Current pull</p>
           <h2>
             PULL <span style={{ color: pull?.color }}>{route.currentPull}</span>
@@ -77,7 +85,7 @@ export function BoardMode({ dungeon, route, showPath, onSelectPull, onEditor }: 
               <span className="mute">Last pull</span>
             )}
           </div>
-          <p className="keys">← → or J K to step · F fullscreen · 1-9 jump</p>
+          <p className="keys">← → or J K to step · F fullscreen · 1-9 jump · ] pulls</p>
         </section>
       </div>
     </div>

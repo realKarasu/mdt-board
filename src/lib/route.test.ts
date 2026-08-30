@@ -89,6 +89,14 @@ describe("MDT group select", () => {
     expect(route.pulls[0].clones).toEqual([]);
   });
 
+  it("re-click removes a pack even if only part of the group is in the pull", () => {
+    const d = dungeon();
+    let route = createRoute(164, "Test");
+    route.pulls[0].clones = [{ enemyId: 1, cloneIdx: 1 }];
+    route = toggleClone(route, { enemyId: 1, cloneIdx: 1 }, d);
+    expect(route.pulls[0].clones).toEqual([]);
+  });
+
   it("moves a pack out of another pull into the current one", () => {
     const d = dungeon();
     let route = createRoute(164, "Test");

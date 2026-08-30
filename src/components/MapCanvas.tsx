@@ -156,8 +156,21 @@ export function MapCanvas({
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    const next = Math.min(8, Math.max(0.85, zoom * (e.deltaY > 0 ? 0.9 : 1.12)));
-    setZoom(next);
+    const nextZoom = Math.min(8, Math.max(0.85, zoom * (e.deltaY > 0 ? 0.9 : 1.12)));
+    if (nextZoom === zoom) return;
+    const stage = stageRef.current?.getBoundingClientRect();
+    const curScale = fit * zoom;
+    const nextScale = fit * nextZoom;
+    if (stage && curScale > 0) {
+      const midX = stage.left + stage.width / 2;
+      const midY = stage.top + stage.height / 2;
+      const t = nextScale / curScale;
+      setPan({
+        x: (e.clientX - midX) * (1 - t) + pan.x * t,
+        y: (e.clientY - midY) * (1 - t) + pan.y * t,
+      });
+    }
+    setZoom(nextZoom);
   }
 
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
@@ -229,26 +242,28 @@ export function MapCanvas({
           </defs>
           {pullGeom.map((p) => {
             const active = p.n === route.currentPull;
+            const frame = hullPath(p.pts, hullPad + 14 * k);
             return (
               <g key={`hull-${p.n}`} className={active ? "hull active" : "hull dim"}>
+                <path
+                  className="pull-frame"
+                  d={frame}
+                  fill={hexAlpha(p.color, active ? 0.12 : 0.05)}
+                  stroke={hexAlpha(p.color, active ? 0.92 : 0.55)}
+                  strokeWidth={2.4 * k}
+                  strokeLinejoin="round"
+                />
                 {p.clusters.map((cluster, ci) => {
                   const d = hullPath(cluster, hullPad);
                   return (
                     <g key={`pack-${p.n}-${ci}`}>
                       <path
                         d={d}
-                        fill={hexAlpha(p.color, active ? 0.1 : 0.04)}
-                        stroke={hexAlpha(p.color, active ? 0.85 : 0.42)}
-                        strokeWidth={7 * k}
+                        fill="none"
+                        stroke={hexAlpha(p.color, active ? 0.7 : 0.35)}
+                        strokeWidth={6 * k}
                         strokeLinejoin="round"
                         filter="url(#pull-glow)"
-                      />
-                      <path
-                        d={d}
-                        fill="none"
-                        stroke={hexAlpha(p.color, active ? 0.95 : 0.55)}
-                        strokeWidth={1.25 * k}
-                        strokeLinejoin="round"
                       />
                     </g>
                   );
