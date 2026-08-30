@@ -341,9 +341,9 @@ h2,
   border-radius: 50%;
   overflow: visible;
   padding: 0;
-  border: 3px solid rgba(255, 255, 255, 0.92);
+  border: solid rgba(255, 255, 255, 0.92);
+  border-width: 1px;
   background: radial-gradient(circle at 38% 30%, #40332a, #17110c 78%);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
   cursor: pointer;
 }
 
@@ -367,18 +367,12 @@ h2,
   color: #d8cbb4;
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: 1.4rem;
   pointer-events: none;
 }
 
 .portrait.boss {
   z-index: 3;
   border-color: #f0c14b;
-  border-width: 4px;
-  box-shadow:
-    0 0 0 2px #21160a,
-    0 0 14px rgba(240, 193, 75, 0.5),
-    0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .portrait.active {
@@ -387,12 +381,8 @@ h2,
 
 .skull {
   position: absolute;
-  right: -6%;
-  top: -6%;
-  width: 34%;
-  height: 34%;
-  min-width: 14px;
-  min-height: 14px;
+  right: -12%;
+  top: -12%;
   border-radius: 50%;
   background:
     rgba(10, 10, 12, 0.92)

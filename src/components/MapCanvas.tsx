@@ -34,11 +34,14 @@ type Hover = {
  * (mapWidth * UNIT x mapHeight * UNIT) scaled uniformly to fit the stage,
  * so SVG overlays and HTML portraits share one aspect ratio and circles
  * can never become ellipses.
+ *
+ * Overlay sizes are divided by the fit factor so they land at fixed CSS
+ * pixels at zoom 1 (MDT scale: ~20px trash, ~30px boss) on any window,
+ * then grow and shrink 1:1 with the user zoom.
  */
 const UNIT = 2;
-const TRASH_SIZE = 52;
-const BOSS_SIZE = 82;
-const HULL_PAD = 40;
+const TRASH_PX = 20;
+const BOSS_PX = 30;
 
 export function MapCanvas({
   dungeon,
@@ -78,6 +81,9 @@ export function MapCanvas({
     return () => ro.disconnect();
   }, [worldW, worldH]);
 
+  // World px per displayed CSS px at zoom 1.
+  const k = 1 / Math.max(fit, 0.05);
+
   const clones = useMemo(() => {
     const list: {
       enemyId: number;
@@ -87,10 +93,20 @@ export function MapCanvas({
       boss: boolean;
       displayId: number;
       skull: boolean;
+      jx: number;
+      jy: number;
     }[] = [];
+    const buckets = new Map<string, number>();
     for (const enemy of dungeon.enemies) {
       for (const clone of enemy.clones) {
         if (clone.sublevel !== floor) continue;
+        // Deterministic de-overlap: clones sharing a small cell spiral out
+        // by a few map units so pack counts stay readable.
+        const key = `${Math.round(clone.x / 5)}:${Math.round(clone.y / 5)}`;
+        const ord = buckets.get(key) ?? 0;
+        buckets.set(key, ord + 1);
+        const ang = ord * 2.4;
+        const dist = ord === 0 ? 0 : 2.4 + ord * 1.1;
         list.push({
           enemyId: enemy.id,
           clone,
@@ -99,6 +115,8 @@ export function MapCanvas({
           boss: enemy.isBoss,
           displayId: enemy.displayId,
           skull: isPriorityMob(enemy.count, enemy.isBoss, enemy.stealthDetect),
+          jx: Math.cos(ang) * dist * UNIT,
+          jy: Math.sin(ang) * dist * UNIT,
         });
       }
     }
@@ -126,7 +144,7 @@ export function MapCanvas({
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    const next = Math.min(6, Math.max(0.85, zoom * (e.deltaY > 0 ? 0.9 : 1.12)));
+    const next = Math.min(8, Math.max(0.85, zoom * (e.deltaY > 0 ? 0.9 : 1.12)));
     setZoom(next);
   }
 
@@ -158,6 +176,7 @@ export function MapCanvas({
       : null;
 
   const scale = fit * zoom;
+  const hullPad = 11 * k;
 
   return (
     <div
@@ -193,19 +212,19 @@ export function MapCanvas({
         >
           <defs>
             <filter id="pull-glow" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="9" />
+              <feGaussianBlur stdDeviation={4 * k} />
             </filter>
           </defs>
           {pullGeom.map((p) => {
             const active = p.n === route.currentPull;
-            const d = hullPath(p.pts, HULL_PAD);
+            const d = hullPath(p.pts, hullPad);
             return (
               <g key={`hull-${p.n}`} className={active ? "hull active" : "hull dim"}>
                 <path
                   d={d}
                   fill={hexAlpha(p.color, active ? 0.13 : 0.06)}
                   stroke={hexAlpha(p.color, active ? 0.85 : 0.45)}
-                  strokeWidth={18}
+                  strokeWidth={8 * k}
                   strokeLinejoin="round"
                   filter="url(#pull-glow)"
                 />
@@ -213,7 +232,7 @@ export function MapCanvas({
                   d={d}
                   fill="none"
                   stroke={hexAlpha(p.color, active ? 0.95 : 0.6)}
-                  strokeWidth={3}
+                  strokeWidth={1.4 * k}
                   strokeLinejoin="round"
                 />
               </g>
@@ -228,14 +247,14 @@ export function MapCanvas({
               const len = Math.hypot(dx, dy) || 1;
               const ux = dx / len;
               const uy = dy / len;
-              const trim = Math.min(HULL_PAD + 18, len * 0.32);
+              const trim = Math.min(hullPad + 10 * k, len * 0.32);
               const ax = from.centroid.x + ux * trim;
               const ay = from.centroid.y + uy * trim;
               const bx = to.centroid.x - ux * trim;
               const by = to.centroid.y - uy * trim;
               const ang = Math.atan2(uy, ux);
-              const ah = 16;
-              const aw = 10;
+              const ah = 8 * k;
+              const aw = 5 * k;
               const tip = { x: bx + ux * ah * 0.6, y: by + uy * ah * 0.6 };
               const p2 = `${tip.x - Math.cos(ang) * ah + Math.cos(ang + Math.PI / 2) * aw},${
                 tip.y - Math.sin(ang) * ah + Math.sin(ang + Math.PI / 2) * aw
@@ -252,7 +271,7 @@ export function MapCanvas({
                     x2={bx}
                     y2={by}
                     stroke="#0d0a06"
-                    strokeWidth={7}
+                    strokeWidth={3.4 * k}
                     strokeLinecap="round"
                     opacity={0.5}
                   />
@@ -262,14 +281,14 @@ export function MapCanvas({
                     x2={bx}
                     y2={by}
                     stroke="#ffa94d"
-                    strokeWidth={4}
+                    strokeWidth={2 * k}
                     strokeLinecap="round"
                   />
                   <polygon
                     points={`${tip.x},${tip.y} ${p2} ${p3}`}
                     fill="#fff"
                     stroke="#0d0a06"
-                    strokeWidth={1.5}
+                    strokeWidth={0.8 * k}
                     strokeLinejoin="round"
                   />
                 </g>
@@ -282,20 +301,28 @@ export function MapCanvas({
             const owner = cloneOwner(route, { enemyId: item.enemyId, cloneIdx: item.clone.idx });
             const active = owner === route.currentPull;
             const color = owner ? route.pulls[owner - 1].color : null;
-            const size = item.boss ? BOSS_SIZE : TRASH_SIZE;
+            const size = (item.boss ? BOSS_PX : TRASH_PX) * k;
+            const rim = (item.boss ? 1.6 : 1) * k;
+            const shadows = [
+              item.boss
+                ? `0 0 ${6 * k}px ${hexAlpha("#f0c14b", 0.55)}`
+                : `0 ${k}px ${3 * k}px rgba(0, 0, 0, 0.55)`,
+            ];
+            if (color) {
+              shadows.unshift(`0 0 0 ${1.6 * k}px ${hexAlpha(color, active ? 0.95 : 0.6)}`);
+            }
             return (
               <button
                 key={`${item.enemyId}-${item.clone.idx}`}
                 type="button"
                 className={`portrait ${item.boss ? "boss" : ""} ${active ? "active" : ""}`}
                 style={{
-                  left: item.clone.x * UNIT,
-                  top: -item.clone.y * UNIT,
+                  left: item.clone.x * UNIT + item.jx,
+                  top: -item.clone.y * UNIT + item.jy,
                   width: size,
                   height: size,
-                  boxShadow: color
-                    ? `0 0 0 3px ${hexAlpha(color, active ? 0.95 : 0.6)}, 0 2px 6px rgba(0,0,0,0.55)`
-                    : undefined,
+                  borderWidth: rim,
+                  boxShadow: shadows.join(", "),
                 }}
                 onPointerDown={(e) => {
                   if (!interactive) return;
@@ -314,9 +341,11 @@ export function MapCanvas({
                 }}
                 onPointerLeave={() => setHover(null)}
               >
-                <span className="portrait-fallback">{item.name.charAt(0)}</span>
+                <span className="portrait-fallback" style={{ fontSize: size * 0.5 }}>
+                  {item.name.charAt(0)}
+                </span>
                 <img src={portraitSrc(item.displayId)} alt="" draggable={false} onError={hidePortrait} />
-                {item.skull && <span className="skull" aria-hidden />}
+                {item.skull && <span className="skull" style={{ width: 8 * k, height: 8 * k }} aria-hidden />}
               </button>
             );
           })}
@@ -330,16 +359,16 @@ export function MapCanvas({
           {entrance && (
             <polygon
               className="entrance"
-              points={diamond(entrance.x, entrance.y, 16)}
+              points={diamond(entrance.x, entrance.y, 8 * k)}
               fill="#3b82f6"
               stroke="#eaf2ff"
-              strokeWidth={3}
+              strokeWidth={1.4 * k}
             />
           )}
           {pullGeom.map((p) => {
             if (!p.centroid) return null;
             const active = p.n === route.currentPull;
-            const r = active ? 20 : 17;
+            const r = (active ? 11 : 9.5) * k;
             return (
               <g
                 key={`num-${p.n}`}
@@ -356,20 +385,20 @@ export function MapCanvas({
                   r={r}
                   fill="#0b0b0d"
                   stroke={active ? "#fff" : "rgba(255,255,255,0.75)"}
-                  strokeWidth={2}
+                  strokeWidth={1.1 * k}
                 />
                 <text
                   x={p.centroid.x}
-                  y={p.centroid.y + (active ? 9 : 8)}
+                  y={p.centroid.y + (active ? 5.2 : 4.6) * k}
                   textAnchor="middle"
-                  fontSize={active ? 27 : 23}
+                  fontSize={(active ? 15 : 13) * k}
                 >
                   {p.n}
                 </text>
                 {p.note.trim() && (
-                  <g transform={`translate(${p.centroid.x + r + 9}, ${p.centroid.y - r - 2})`}>
-                    <circle r={9} fill="#f5d76e" stroke="#3a2a00" strokeWidth={1.5} />
-                    <text y={4.5} textAnchor="middle" fontSize={14} fill="#3a2a00">
+                  <g transform={`translate(${p.centroid.x + r + 5 * k}, ${p.centroid.y - r - k})`}>
+                    <circle r={4.6 * k} fill="#f5d76e" stroke="#3a2a00" strokeWidth={0.8 * k} />
+                    <text y={2.4 * k} textAnchor="middle" fontSize={7 * k} fill="#3a2a00">
                       !
                     </text>
                   </g>

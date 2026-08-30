@@ -369,16 +369,18 @@ async function fetchPortraits(dungeons, outDir) {
         if (!res.ok) throw new Error(String(res.status));
         const buf = Buffer.from(await res.arrayBuffer());
         // Thumbs are full-body renders on transparency; trim the empty
-        // border and crop toward the salient region so the creature
-        // fills the circular portrait.
+        // border, crop toward the salient region so the creature fills
+        // the circle, and boost punch for ~20px icons.
         await sharp(buf)
           .trim({ threshold: 12 })
-          .resize(256, 256, { fit: "cover", position: sharp.strategy.attention })
+          .resize(128, 128, { fit: "cover", position: sharp.strategy.attention })
+          .modulate({ saturation: 1.18, brightness: 1.08 })
+          .sharpen({ sigma: 0.9 })
           .webp({ quality: 88 })
           .toFile(dest);
       } catch {
         await sharp({
-          create: { width: 256, height: 256, channels: 3, background: { r: 42, g: 28, b: 22 } },
+          create: { width: 128, height: 128, channels: 3, background: { r: 42, g: 28, b: 22 } },
         })
           .webp({ quality: 70 })
           .toFile(dest);
